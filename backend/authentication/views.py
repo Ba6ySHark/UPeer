@@ -2,7 +2,8 @@ from django.shortcuts import render
 from rest_framework import status
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.permissions import AllowAny
+from authentication.permissions import IsAuthenticated, IsAdmin
 from .serializers import UserRegistrationSerializer, UserLoginSerializer, UserProfileSerializer, UserUpdateSerializer
 from .models import UserManager
 import hashlib
@@ -93,7 +94,7 @@ class ProfileView(APIView):
     permission_classes = [IsAuthenticated]
     
     def get(self, request):
-        user = UserManager.get_user_by_id(request.user['user_id'])
+        user = UserManager.get_user_by_id(request.user.user_id)
         if not user:
             return Response({'error': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
         
@@ -104,7 +105,7 @@ class ProfileView(APIView):
         serializer = UserUpdateSerializer(data=request.data)
         if serializer.is_valid():
             success = UserManager.update_user(
-                user_id=request.user['user_id'],
+                user_id=request.user.user_id,
                 name=serializer.validated_data['name'],
                 email=serializer.validated_data['email']
             )
@@ -112,7 +113,7 @@ class ProfileView(APIView):
             if not success:
                 return Response({'error': 'Failed to update user'}, status=status.HTTP_400_BAD_REQUEST)
             
-            user = UserManager.get_user_by_id(request.user['user_id'])
+            user = UserManager.get_user_by_id(request.user.user_id)
             return Response(UserProfileSerializer(user).data, status=status.HTTP_200_OK)
         
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

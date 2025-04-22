@@ -32,6 +32,8 @@ SECRET_KEY = env.str('SECRET_KEY', default='django-insecure-x$b@g$g$&81kvu59rpk-
 DEBUG = env.bool('DEBUG', default=True)
 
 ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=['localhost', '127.0.0.1'])
+CORS_ALLOW_CREDENTIALS = True
+CORS_ALLOW_ALL_ORIGINS = True  # For development only
 
 
 # Application definition
@@ -65,6 +67,7 @@ MIDDLEWARE = [
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'authentication.middleware.JWTMiddleware',  # Our custom JWT middleware
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
@@ -94,15 +97,21 @@ ASGI_APPLICATION = 'upeer_project.asgi.application'
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.mysql',
-        'NAME': env.str('DB_NAME', default='upeer_db'),
-        'USER': env.str('DB_USER', default='root'),
-        'PASSWORD': env.str('DB_PASSWORD', default=''),
-        'HOST': env.str('DB_HOST', default='localhost'),
-        'PORT': env.str('DB_PORT', default='3306'),
+    "default": {
+        "ENGINE": "django.db.backends.mysql",
+        "NAME": "myproject",
+        "USER": "myproj_user",
+        "PASSWORD": "s0m3‑str0ng‑p4ss",
+        "HOST": "127.0.0.1",   # or "localhost"
+        "PORT": "3306",
+        "OPTIONS": {
+            "charset": "utf8mb4",
+            # for PyMySQL uncomment the next line
+            # "init_command": "SET sql_mode='STRICT_TRANS_TABLES'",
+        },
     }
 }
+
 
 
 # Password validation
@@ -160,11 +169,11 @@ CORS_ALLOWED_ORIGINS = env.list('CORS_ALLOWED_ORIGINS', default=[
 # REST Framework settings
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
+        'authentication.middleware.JWTAuthentication',
         'rest_framework.authentication.SessionAuthentication',
-        'rest_framework.authentication.TokenAuthentication',
     ],
     'DEFAULT_PERMISSION_CLASSES': [
-        'rest_framework.permissions.IsAuthenticated',
+        'authentication.permissions.IsAuthenticated',
     ],
 }
 
