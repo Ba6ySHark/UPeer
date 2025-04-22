@@ -31,7 +31,8 @@ const PostCard = ({ post, onEdit, onDelete, onReport, onJoinGroup }) => {
     author,
     course,
     user_id: postUserId,
-    has_group = false
+    has_group = false,
+    post_type = 'seeking'
   } = post || {};
   
   // Ensure we have a valid post ID
@@ -99,11 +100,21 @@ const PostCard = ({ post, onEdit, onDelete, onReport, onJoinGroup }) => {
             </div>
           </div>
           
-          {(course || post.course_name) && (
-            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-              {course?.course_code || post.course_name}
+          <div className="flex space-x-2">
+            {(course || post.course_name) && (
+              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                {course?.course_code || post.course_name}
+              </span>
+            )}
+            
+            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+              post_type === 'seeking' 
+                ? 'bg-amber-100 text-amber-800' 
+                : 'bg-green-100 text-green-800'
+            }`}>
+              {post_type === 'seeking' ? 'Seeking Help' : 'Offering Help'}
             </span>
-          )}
+          </div>
         </div>
         
         <div className="mt-3">

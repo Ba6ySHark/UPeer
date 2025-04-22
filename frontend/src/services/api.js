@@ -31,12 +31,12 @@ export const courseService = {
 // Post services
 export const postService = {
   // Get all posts (with optional course filter and post type)
-  getPosts: async (courseId = null, type = null) => {
+  getPosts: async (courseId = null, postType = null) => {
     let url = '/api/posts/';
     const params = new URLSearchParams();
     
     if (courseId) params.append('course_id', courseId);
-    if (type) params.append('type', type);
+    if (postType) params.append('post_type', postType);
     
     if (params.toString()) {
       url += '?' + params.toString();
@@ -47,10 +47,10 @@ export const postService = {
   },
   
   // Create a new post
-  createPost: async (content, courseId = null, type = 'seeking') => {
+  createPost: async (content, courseId = null, postType = 'seeking') => {
     const data = { 
       content,
-      type
+      post_type: postType
     };
     if (courseId) data.course_id = courseId;
     

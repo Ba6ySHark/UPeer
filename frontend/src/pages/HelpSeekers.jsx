@@ -171,7 +171,7 @@ const HelpSeekers = () => {
           <div className="p-4 border-b border-gray-200">
             <h2 className="text-lg font-medium text-gray-900 mb-4">Ask for Help</h2>
             <PostForm
-              initialData={{ type: 'seeking' }}
+              initialData={{ post_type: 'seeking' }}
               onSubmit={handleCreatePost}
               onCancel={() => setShowPostForm(false)}
               courses={courses}
