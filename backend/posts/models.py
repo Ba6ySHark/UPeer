@@ -1,35 +1,90 @@
 from django.db import models
 from django.db import connection
+from django.db.utils import DatabaseError
 
 class PostManager:
     @staticmethod
-    def get_posts(course_id=None):
-        with connection.cursor() as cursor:
-            query = """
-                SELECT p.post_id, p.content, p.date_created, u.name AS author, c.course_name 
-                FROM posts p 
-                JOIN users u ON p.user_id = u.user_id 
-                LEFT JOIN courses c ON p.course_id = c.course_id 
-                WHERE p.is_active = 1 AND (%s IS NULL OR p.course_id = %s) 
-                ORDER BY p.date_created DESC
-            """
-            cursor.execute(query, [course_id, course_id])
-            posts = []
-            for row in cursor.fetchall():
-                posts.append({
-                    'post_id': row[0],
-                    'content': row[1],
-                    'date_created': row[2],
-                    'author': row[3],
-                    'course_name': row[4]
-                })
-            return posts
+    def get_posts(course_id=None, post_type=None):
+        try:
+            with connection.cursor() as cursor:
+                params = []
+                conditions = ["p.is_active = 1"]
+                
+                if course_id is not None:
+                    conditions.append("p.course_id = %s")
+                    params.append(course_id)
+                    
+                if post_type is not None:
+                    conditions.append("p.post_type = %s")
+                    params.append(post_type)
+                    
+                where_clause = " AND ".join(conditions)
+                
+                query = f"""
+                    SELECT p.post_id, p.content, p.date_created, p.post_type, u.name AS author, c.course_name 
+                    FROM posts p 
+                    JOIN users u ON p.user_id = u.user_id 
+                    LEFT JOIN courses c ON p.course_id = c.course_id 
+                    WHERE {where_clause}
+                    ORDER BY p.date_created DESC
+                """
+                cursor.execute(query, params)
+                posts = []
+                for row in cursor.fetchall():
+                    posts.append({
+                        'post_id': row[0],
+                        'content': row[1],
+                        'date_created': row[2],
+                        'post_type': row[3],
+                        'author': row[4],
+                        'course_name': row[5]
+                    })
+                return posts
+        except DatabaseError as e:
+            # If there's an error related to the post_type column
+            if "Unknown column 'p.post_type'" in str(e):
+                # Fallback query without post_type
+                with connection.cursor() as cursor:
+                    params = []
+                    conditions = ["p.is_active = 1"]
+                    
+                    if course_id is not None:
+                        conditions.append("p.course_id = %s")
+                        params.append(course_id)
+                        
+                    where_clause = " AND ".join(conditions)
+                    
+                    # Use a default value for post_type since it doesn't exist
+                    query = f"""
+                        SELECT p.post_id, p.content, p.date_created, 'seeking' AS post_type, u.name AS author, c.course_name 
+                        FROM posts p 
+                        JOIN users u ON p.user_id = u.user_id 
+                        LEFT JOIN courses c ON p.course_id = c.course_id 
+                        WHERE {where_clause}
+                        ORDER BY p.date_created DESC
+                    """
+                    cursor.execute(query, params)
+                    posts = []
+                    for row in cursor.fetchall():
+                        posts.append({
+                            'post_id': row[0],
+                            'content': row[1],
+                            'date_created': row[2],
+                            'post_type': row[3],
+                            'author': row[4],
+                            'course_name': row[5]
+                        })
+                    return posts
+            else:
+                # For other database errors, re-raise
+                raise
     
     @staticmethod
     def get_post_by_id(post_id):
         with connection.cursor() as cursor:
             query = """
-                SELECT p.post_id, p.content, p.date_created, p.date_modified, p.user_id, p.course_id, p.is_active, p.is_reported 
+                SELECT p.post_id, p.content, p.date_created, p.date_modified, p.user_id, p.course_id, 
+                       p.post_type, p.is_active, p.is_reported 
                 FROM posts p 
                 WHERE p.post_id = %s
             """
@@ -43,8 +98,9 @@ class PostManager:
                     'date_modified': row[3],
                     'user_id': row[4],
                     'course_id': row[5],
-                    'is_active': bool(row[6]),
-                    'is_reported': bool(row[7])
+                    'post_type': row[6],
+                    'is_active': bool(row[7]),
+                    'is_reported': bool(row[8])
                 }
             return None
     
@@ -110,11 +166,23 @@ class PostManager:
             return cursor.rowcount > 0
     
     @staticmethod
-    def create_post(user_id, content, course_id=None):
-        with connection.cursor() as cursor:
-            query = "INSERT INTO posts (user_id, course_id, content) VALUES (%s, %s, %s)"
-            cursor.execute(query, [user_id, course_id, content])
-            return cursor.lastrowid
+    def create_post(user_id, content, course_id=None, post_type='seeking'):
+        try:
+            with connection.cursor() as cursor:
+                query = "INSERT INTO posts (user_id, course_id, content, post_type) VALUES (%s, %s, %s, %s)"
+                cursor.execute(query, [user_id, course_id, content, post_type])
+                return cursor.lastrowid
+        except DatabaseError as e:
+            # If there's an error related to the post_type column
+            if "Unknown column 'post_type'" in str(e):
+                # Fallback: insert without post_type
+                with connection.cursor() as cursor:
+                    query = "INSERT INTO posts (user_id, course_id, content) VALUES (%s, %s, %s)"
+                    cursor.execute(query, [user_id, course_id, content])
+                    return cursor.lastrowid
+            else:
+                # For other database errors, re-raise
+                raise
     
     @staticmethod
     def update_post(post_id, user_id, content, is_admin=False):

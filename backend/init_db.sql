@@ -31,6 +31,7 @@ CREATE TABLE IF NOT EXISTS posts (
   user_id       INT NOT NULL,
   course_id     INT NULL,
   content       TEXT NOT NULL,
+  post_type     ENUM('seeking', 'offering') NOT NULL DEFAULT 'seeking',
   date_created  TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   date_modified TIMESTAMP NULL,
   is_active     TINYINT(1) DEFAULT 1,
@@ -114,12 +115,12 @@ INSERT INTO user_courses (user_id, course_id) VALUES
 (2, 1), (2, 3),
 (3, 2), (3, 4);
 
--- Create some posts
-INSERT INTO posts (user_id, course_id, content) VALUES 
-(2, 1, 'Looking for a study partner for the upcoming midterm in CPSC 331. Anyone interested?'),
-(3, 2, 'Does anyone have the notes from last week''s MATH 271 lecture? I missed the class due to illness.'),
-(2, 3, 'I''m organizing a study group for CPSC 355. We''ll be meeting at the library on Friday at 3 PM.'),
-(3, 4, 'Can someone help me with the homework for PHIL 279? I''m stuck on question 3.');
+-- Create some posts with post_type explicitly set
+INSERT INTO posts (user_id, course_id, content, post_type) VALUES 
+(2, 1, 'Looking for a study partner for the upcoming midterm in CPSC 331. Anyone interested?', 'seeking'),
+(3, 2, 'Does anyone have the notes from last week''s MATH 271 lecture? I missed the class due to illness.', 'seeking'),
+(2, 3, 'I''m organizing a study group for CPSC 355. We''ll be meeting at the library on Friday at 3 PM.', 'offering'),
+(3, 4, 'Can someone help me with the homework for PHIL 279? I''m stuck on question 3.', 'seeking');
 
 -- Add some comments to posts
 INSERT INTO comments (post_id, user_id, content) VALUES

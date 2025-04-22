@@ -4,13 +4,14 @@ class PostSerializer(serializers.Serializer):
     post_id = serializers.IntegerField(read_only=True)
     content = serializers.CharField()
     date_created = serializers.DateTimeField(read_only=True)
+    post_type = serializers.CharField(read_only=True)
     author = serializers.CharField(read_only=True)
     course_name = serializers.CharField(read_only=True, allow_null=True)
 
 class PostCreateSerializer(serializers.Serializer):
     content = serializers.CharField()
     course_id = serializers.IntegerField(allow_null=True, required=False)
-    type = serializers.CharField(required=False, default='seeking')
+    post_type = serializers.ChoiceField(choices=['seeking', 'offering'], default='seeking')
 
 class PostUpdateSerializer(serializers.Serializer):
     content = serializers.CharField()
