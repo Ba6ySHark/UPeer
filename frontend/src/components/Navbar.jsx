@@ -28,11 +28,25 @@ const Navbar = () => {
                 Courses
               </Link>
               <Link
-                to="/board"
+                to="/help-seekers"
                 className="border-transparent text-gray-500 hover:border-primary hover:text-primary inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium"
               >
-                Board
+                Help Seekers
               </Link>
+              <Link
+                to="/helpers"
+                className="border-transparent text-gray-500 hover:border-primary hover:text-primary inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium"
+              >
+                Helpers
+              </Link>
+              {user && (
+                <Link
+                  to="/study-groups"
+                  className="border-transparent text-gray-500 hover:border-primary hover:text-primary inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium"
+                >
+                  Study Groups
+                </Link>
+              )}
             </div>
           </div>
           <div className="hidden sm:ml-6 sm:flex sm:items-center">
@@ -108,12 +122,28 @@ const Navbar = () => {
               Courses
             </Link>
             <Link
-              to="/board"
+              to="/help-seekers"
               className="border-transparent text-gray-600 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-800 block pl-3 pr-4 py-2 border-l-4 text-base font-medium"
               onClick={() => setIsOpen(false)}
             >
-              Board
+              Help Seekers
             </Link>
+            <Link
+              to="/helpers"
+              className="border-transparent text-gray-600 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-800 block pl-3 pr-4 py-2 border-l-4 text-base font-medium"
+              onClick={() => setIsOpen(false)}
+            >
+              Helpers
+            </Link>
+            {user && (
+              <Link
+                to="/study-groups"
+                className="border-transparent text-gray-600 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-800 block pl-3 pr-4 py-2 border-l-4 text-base font-medium"
+                onClick={() => setIsOpen(false)}
+              >
+                Study Groups
+              </Link>
+            )}
           </div>
           <div className="pt-4 pb-3 border-t border-gray-200">
             {user ? (

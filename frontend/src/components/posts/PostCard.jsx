@@ -1,31 +1,48 @@
-import { useState } from 'react';
+import { useState, useContext } from 'react';
 import { format } from 'date-fns';
 import { 
   PencilIcon, 
   TrashIcon, 
   FlagIcon,
-  ChatBubbleLeftIcon
+  ChatBubbleLeftIcon,
+  UserGroupIcon
 } from '@heroicons/react/24/outline';
+import { AuthContext } from '../../context/AuthContext';
+import CommentList from '../comments/CommentList';
+import CommentForm from '../comments/CommentForm';
 
-const PostCard = ({ post, onEdit, onDelete, onReport }) => {
+const PostCard = ({ post, onEdit, onDelete, onReport, onJoinGroup }) => {
   const [isReporting, setIsReporting] = useState(false);
   const [reportReason, setReportReason] = useState('');
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [showComments, setShowComments] = useState(false);
+  const [commentCount, setCommentCount] = useState(post?.comments_count || 0);
+  const { user } = useContext(AuthContext);
   
+  console.log('PostCard received post:', post);
+  
+  // Extract post properties with fallbacks
   const {
     post_id,
     content,
     created_at,
     updated_at,
-    user,
+    user: postUser,
     author,
     course,
-    comments_count = 0,
-  } = post;
+    user_id: postUserId,
+    has_group = false
+  } = post || {};
+  
+  // Ensure we have a valid post ID
+  const postId = post_id || post?.post_id || post?.id;
   
   // Handle both data structures - either post has a user object or an author string
-  const userName = user?.name || author || 'Anonymous';
+  const userName = postUser?.name || author || 'Anonymous';
   const userInitial = userName.charAt(0).toUpperCase();
+  
+  // Check if current user is the post author or an admin
+  const isAuthorOrAdmin = (user?.id === postUserId) || user?.isAdmin;
   
   const formatDate = (dateString) => {
     try {
@@ -56,6 +73,11 @@ const PostCard = ({ post, onEdit, onDelete, onReport }) => {
       // Auto-reset after 5 seconds
       setTimeout(() => setConfirmDelete(false), 5000);
     }
+  };
+  
+  // Comment count handler
+  const handleCommentCountChange = (count) => {
+    setCommentCount(count);
   };
   
   return (
@@ -89,18 +111,29 @@ const PostCard = ({ post, onEdit, onDelete, onReport }) => {
         </div>
         
         <div className="mt-4 flex items-center justify-between text-gray-500 text-sm">
-          <div>
+          <div className="flex items-center space-x-4">
             <button 
               className="inline-flex items-center text-gray-500 hover:text-gray-700"
               aria-label="Comments"
+              onClick={() => setShowComments(!showComments)}
             >
               <ChatBubbleLeftIcon className="h-4 w-4 mr-1" />
-              {comments_count} {comments_count === 1 ? 'comment' : 'comments'}
+              {commentCount} {commentCount === 1 ? 'comment' : 'comments'}
             </button>
+            
+            {onJoinGroup && (
+              <button 
+                className="inline-flex items-center px-3 py-1 border border-transparent rounded-md text-xs font-medium bg-indigo-100 text-indigo-700 hover:bg-indigo-200 transition-colors"
+                onClick={() => onJoinGroup(postId)}
+              >
+                <UserGroupIcon className="h-4 w-4 mr-1" />
+                Join Study Group
+              </button>
+            )}
           </div>
           
           <div className="flex space-x-2">
-            {onEdit && (
+            {onEdit && isAuthorOrAdmin && (
               <button 
                 type="button" 
                 onClick={onEdit}
@@ -111,7 +144,7 @@ const PostCard = ({ post, onEdit, onDelete, onReport }) => {
               </button>
             )}
             
-            {onDelete && (
+            {onDelete && isAuthorOrAdmin && (
               <button 
                 type="button" 
                 onClick={handleDeleteClick}
@@ -138,6 +171,31 @@ const PostCard = ({ post, onEdit, onDelete, onReport }) => {
             )}
           </div>
         </div>
+        
+        {showComments && (
+          <div className="mt-4 pt-4 border-t">
+            {postId ? (
+              <>
+                <CommentList 
+                  postId={postId} 
+                  onCommentCountChange={handleCommentCountChange} 
+                />
+                <div className="mt-4">
+                  <CommentForm 
+                    postId={postId} 
+                    onSuccess={(newComment) => {
+                      setCommentCount(prevCount => prevCount + 1);
+                    }}
+                  />
+                </div>
+              </>
+            ) : (
+              <p className="text-sm text-gray-500 text-center py-2">
+                Unable to load comments. Post ID is missing.
+              </p>
+            )}
+          </div>
+        )}
         
         {isReporting && (
           <div className="mt-3 pt-3 border-t">

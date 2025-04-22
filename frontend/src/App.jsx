@@ -1,4 +1,5 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { Toaster } from 'react-hot-toast';
 import { AuthProvider } from './context/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import Navbar from './components/Navbar';
@@ -8,6 +9,9 @@ import Register from './pages/Register';
 import Profile from './pages/Profile';
 import Board from './pages/Board';
 import CourseList from './pages/CourseList';
+import HelpSeekers from './pages/HelpSeekers';
+import Helpers from './pages/Helpers';
+import StudyGroups from './pages/StudyGroups';
 
 function App() {
   return (
@@ -25,6 +29,11 @@ function App() {
               {/* Protected routes */}
               <Route element={<ProtectedRoute />}>
                 <Route path="/profile" element={<Profile />} />
+                <Route path="/courses" element={<CourseList />} />
+                <Route path="/board" element={<Board />} />
+                <Route path="/help-seekers" element={<HelpSeekers />} />
+                <Route path="/helpers" element={<Helpers />} />
+                <Route path="/study-groups" element={<StudyGroups />} />
                 {/* Add more protected routes as needed */}
               </Route>
               
@@ -32,9 +41,6 @@ function App() {
               <Route element={<ProtectedRoute requireAdmin={true} />}>
                 {/* Add admin routes as needed */}
               </Route>
-
-              <Route path="/courses" element={<CourseList />} />
-              <Route path="/board" element={<Board />} />
             </Routes>
           </main>
           <footer className="bg-white shadow-inner">
@@ -45,6 +51,9 @@ function App() {
             </div>
           </footer>
         </div>
+        
+        {/* Toast notifications */}
+        <Toaster position="top-right" />
       </AuthProvider>
     </Router>
   );

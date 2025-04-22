@@ -1,90 +1,78 @@
 import { useState } from 'react';
+import { commentService } from '../../services/api';
 import PropTypes from 'prop-types';
 
-const CommentForm = ({ postId, parentId = null, onSuccess, placeholder = 'Write a comment...' }) => {
+const CommentForm = ({ postId, parentId = null, onSuccess }) => {
   const [content, setContent] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState('');
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    if (!content.trim()) return;
+    if (!content.trim()) {
+      return;
+    }
     
     setIsSubmitting(true);
+    setError('');
     
     try {
-      // Simulate API call to create comment
-      // In a real app, you would make an API request here
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      const newComment = {
-        comment_id: `temp-${Date.now()}`,
-        content: content.trim(),
-        created_at: new Date().toISOString(),
-        parent_id: parentId,
+      const newComment = await commentService.createComment({
         post_id: postId,
-        user: {
-          user_id: 'current-user',
-          username: 'currentuser',
-          full_name: 'Current User',
-          avatar_url: 'https://via.placeholder.com/40'
-        },
-        replies: []
-      };
+        parent_id: parentId,
+        content: content.trim()
+      });
       
+      setContent('');
       if (onSuccess) {
         onSuccess(newComment);
       }
-      
-      setContent('');
-    } catch (error) {
-      console.error('Failed to submit comment:', error);
+    } catch (err) {
+      setError('Failed to submit comment. Please try again.');
+      console.error('Error submitting comment:', err);
     } finally {
       setIsSubmitting(false);
     }
   };
 
   return (
-    <form onSubmit={handleSubmit} className="w-full">
-      <div className="flex space-x-4">
-        <img
-          src="https://via.placeholder.com/40"
-          alt="Your avatar"
-          className="w-10 h-10 rounded-full"
-        />
-        <div className="flex-grow">
-          <textarea
-            value={content}
-            onChange={(e) => setContent(e.target.value)}
-            placeholder={placeholder}
-            rows="3"
-            className="w-full px-3 py-2 text-gray-700 border rounded-lg focus:outline-none focus:border-blue-500"
-            disabled={isSubmitting}
-          />
-          <div className="mt-2 flex justify-end">
-            <button
-              type="submit"
-              disabled={!content.trim() || isSubmitting}
-              className={`px-4 py-2 text-white rounded-lg transition ${
-                !content.trim() || isSubmitting
-                  ? 'bg-gray-300 cursor-not-allowed'
-                  : 'bg-blue-600 hover:bg-blue-700'
-              }`}
-            >
-              {isSubmitting ? 'Submitting...' : parentId ? 'Reply' : 'Comment'}
-            </button>
-          </div>
-        </div>
+    <form onSubmit={handleSubmit}>
+      <div>
+        <label htmlFor="comment" className="sr-only">Comment</label>
+        <textarea
+          id="comment"
+          name="comment"
+          rows="3"
+          className="shadow-sm block w-full focus:ring-primary focus:border-primary sm:text-sm border border-gray-300 rounded-md"
+          placeholder={parentId ? "Write a reply..." : "Add a comment..."}
+          value={content}
+          onChange={(e) => setContent(e.target.value)}
+          disabled={isSubmitting}
+        ></textarea>
+      </div>
+      
+      {error && (
+        <p className="mt-2 text-sm text-red-600">{error}</p>
+      )}
+      
+      <div className="mt-3 flex justify-end">
+        <button
+          type="submit"
+          className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-primary hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
+          disabled={isSubmitting || !content.trim()}
+        >
+          {isSubmitting ? 'Posting...' : parentId ? 'Reply' : 'Comment'}
+        </button>
       </div>
     </form>
   );
 };
 
 CommentForm.propTypes = {
-  postId: PropTypes.string.isRequired,
-  parentId: PropTypes.string,
-  onSuccess: PropTypes.func,
-  placeholder: PropTypes.string
+  postId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
+  parentId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+  onSuccess: PropTypes.func
 };
 
 export default CommentForm; 
