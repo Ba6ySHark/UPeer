@@ -1,4 +1,5 @@
--- Create the database if it doesn't exist
+-- Drop the database if it exists, and create it fresh
+DROP DATABASE IF EXISTS myproject;
 CREATE DATABASE IF NOT EXISTS myproject;
 USE myproject;
 
@@ -38,11 +39,43 @@ CREATE TABLE IF NOT EXISTS posts (
   FOREIGN KEY (course_id)REFERENCES courses(course_id)ON DELETE SET NULL
 ) ENGINE=InnoDB;
 
+CREATE TABLE IF NOT EXISTS comments (
+  comment_id    INT AUTO_INCREMENT PRIMARY KEY,
+  post_id       INT NOT NULL,
+  user_id       INT NOT NULL,
+  content       TEXT NOT NULL,
+  parent_id     INT NULL,
+  date_created  TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (post_id)   REFERENCES posts(post_id)   ON DELETE CASCADE,
+  FOREIGN KEY (user_id)   REFERENCES users(user_id)   ON DELETE CASCADE,
+  FOREIGN KEY (parent_id) REFERENCES comments(comment_id) ON DELETE SET NULL
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS post_reports (
+  report_id     INT AUTO_INCREMENT PRIMARY KEY,
+  post_id       INT NOT NULL,
+  user_id       INT NOT NULL,
+  reason        TEXT NOT NULL,
+  date_created  TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (post_id) REFERENCES posts(post_id) ON DELETE CASCADE,
+  FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
 CREATE TABLE IF NOT EXISTS study_groups (
   group_id     INT AUTO_INCREMENT PRIMARY KEY,
   title        VARCHAR(150) NOT NULL,
   date_created TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS post_group_associations (
+  association_id INT PRIMARY KEY AUTO_INCREMENT,
+  post_id INT NOT NULL,
+  group_id INT NOT NULL,
+  date_created TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (post_id) REFERENCES posts(post_id) ON DELETE CASCADE,
+  FOREIGN KEY (group_id) REFERENCES study_groups(group_id) ON DELETE CASCADE,
+  UNIQUE (post_id)
+);
 
 CREATE TABLE IF NOT EXISTS study_group_members (
   group_id INT NOT NULL,
@@ -87,6 +120,12 @@ INSERT INTO posts (user_id, course_id, content) VALUES
 (3, 2, 'Does anyone have the notes from last week''s MATH 271 lecture? I missed the class due to illness.'),
 (2, 3, 'I''m organizing a study group for CPSC 355. We''ll be meeting at the library on Friday at 3 PM.'),
 (3, 4, 'Can someone help me with the homework for PHIL 279? I''m stuck on question 3.');
+
+-- Add some comments to posts
+INSERT INTO comments (post_id, user_id, content) VALUES
+(1, 3, 'I''m interested! When are you planning to meet?'),
+(1, 1, 'Count me in too, I need to study for this midterm.'),
+(2, 2, 'I have the notes, I can share them with you.');
 
 -- Create study groups
 INSERT INTO study_groups (title) VALUES 

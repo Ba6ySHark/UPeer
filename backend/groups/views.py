@@ -3,7 +3,7 @@ from rest_framework import status
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from authentication.permissions import IsAuthenticated, IsAdmin
-from .serializers import GroupSerializer, GroupCreateSerializer, GroupMemberSerializer, GroupJoinSerializer
+from .serializers import GroupSerializer, GroupCreateSerializer, GroupMemberSerializer, GroupJoinSerializer, GroupInviteSerializer
 from .models import GroupManager
 
 # Create your views here.
@@ -91,3 +91,35 @@ class GroupLeaveView(APIView):
             return Response({'error': 'Failed to leave group'}, status=status.HTTP_400_BAD_REQUEST)
         
         return Response({'message': 'Successfully left group'}, status=status.HTTP_200_OK)
+
+class GroupInviteView(APIView):
+    permission_classes = [IsAuthenticated]
+    
+    def post(self, request, group_id):
+        # Verify group exists
+        group = GroupManager.get_group_by_id(group_id)
+        if not group:
+            return Response({'error': 'Group not found'}, status=status.HTTP_404_NOT_FOUND)
+        
+        # Verify user is a member of the group
+        if not GroupManager.is_member(group_id, request.user.user_id):
+            return Response({'error': 'You must be a member to invite others'}, status=status.HTTP_403_FORBIDDEN)
+        
+        serializer = GroupInviteSerializer(data=request.data)
+        if serializer.is_valid():
+            email = serializer.validated_data['email']
+            
+            # Log info for debugging
+            print(f"Inviting user email: {email} to group: {group_id}")
+            print(f"Request data: {request.data}")
+            
+            result = GroupManager.invite_by_email(group_id, email)
+            
+            if result['success']:
+                return Response({'message': f'Successfully invited user to the group'}, status=status.HTTP_200_OK)
+            else:
+                return Response({'error': result['message']}, status=status.HTTP_400_BAD_REQUEST)
+        else:
+            # Include more detailed validation errors
+            print(f"Validation errors: {serializer.errors}")
+            return Response({'error': 'Invalid email format', 'details': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)

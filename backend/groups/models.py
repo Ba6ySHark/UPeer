@@ -86,3 +86,34 @@ class GroupManager:
             query = "SELECT 1 FROM study_group_members WHERE group_id = %s AND user_id = %s"
             cursor.execute(query, [group_id, user_id])
             return cursor.fetchone() is not None
+
+    @staticmethod
+    def invite_by_email(group_id, email):
+        if not email or not email.strip():
+            return {'success': False, 'message': 'Email address is required'}
+            
+        with connection.cursor() as cursor:
+            # First, check if the user with this email exists
+            query = "SELECT user_id FROM users WHERE email = %s"
+            cursor.execute(query, [email])
+            user_row = cursor.fetchone()
+            
+            # For debugging
+            print(f"Looking up user with email: {email}, found: {user_row is not None}")
+            
+            if not user_row:
+                return {'success': False, 'message': 'User with this email not found'}
+                
+            user_id = user_row[0]
+            
+            # Check if user is already a member
+            if GroupManager.is_member(group_id, user_id):
+                return {'success': False, 'message': 'User is already a member of this group'}
+            
+            # Add user to the group
+            success = GroupManager.join_group(group_id, user_id)
+            
+            if success:
+                return {'success': True, 'user_id': user_id}
+            else:
+                return {'success': False, 'message': 'Failed to add user to group'}
