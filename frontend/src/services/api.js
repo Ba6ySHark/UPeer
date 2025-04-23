@@ -25,6 +25,12 @@ export const courseService = {
   unenrollCourse: async (courseId) => {
     const response = await axiosInstance.delete(`/api/courses/enrol/${courseId}/`);
     return response.data;
+  },
+  
+  // Create a new course (admin only)
+  createCourse: async (courseName) => {
+    const response = await axiosInstance.post(`/api/courses/`, { course_name: courseName });
+    return response.data;
   }
 };
 
