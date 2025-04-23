@@ -75,7 +75,7 @@ const PostForm = ({ initialData = {}, onSubmit, onCancel, courses = [], postType
               <select
                 id="course"
                 name="course"
-                className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm rounded-md"
+                className="mt-1 block w-full px-4 py-3 text-base border-gray-300 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm rounded-md"
                 value={courseId}
                 onChange={(e) => setCourseId(e.target.value)}
                 disabled={isSubmitting}
@@ -96,7 +96,7 @@ const PostForm = ({ initialData = {}, onSubmit, onCancel, courses = [], postType
               <select
                 id="post-type"
                 name="post-type"
-                className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm rounded-md"
+                className="mt-1 block w-full px-4 py-3 text-base border-gray-300 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm rounded-md"
                 value={postType}
                 onChange={(e) => setPostType(e.target.value)}
                 disabled={isSubmitting || initialPostType}
@@ -114,7 +114,7 @@ const PostForm = ({ initialData = {}, onSubmit, onCancel, courses = [], postType
                 id="content"
                 name="content"
                 rows="4"
-                className="mt-1 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md"
+                className="mt-1 block w-full px-4 py-3 shadow-sm sm:text-sm border-gray-300 rounded-md"
                 placeholder="What would you like to share?"
                 value={content}
                 onChange={(e) => setContent(e.target.value)}
@@ -122,12 +122,12 @@ const PostForm = ({ initialData = {}, onSubmit, onCancel, courses = [], postType
               ></textarea>
             </div>
             
-            <div className="flex justify-end space-x-3">
+            <div className="flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-3 space-y-3 space-y-reverse sm:space-y-0">
               {onCancel && (
                 <button
                   type="button"
                   onClick={onCancel}
-                  className="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
+                  className="w-full sm:w-auto inline-flex justify-center items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
                   disabled={isSubmitting}
                 >
                   Cancel
@@ -136,7 +136,7 @@ const PostForm = ({ initialData = {}, onSubmit, onCancel, courses = [], postType
               
               <button
                 type="submit"
-                className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-primary hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
+                className="w-full sm:w-auto inline-flex justify-center items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-primary hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
                 disabled={isSubmitting}
               >
                 {isSubmitting ? 'Saving...' : initialData.post_id ? 'Update' : 'Post'}

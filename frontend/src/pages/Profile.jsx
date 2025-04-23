@@ -1,6 +1,7 @@
 import { useState, useContext, useEffect } from 'react';
 import { AuthContext } from '../context/AuthContext';
 import { courseService } from '../services/api';
+import { toast } from 'react-hot-toast';
 
 const Profile = () => {
   const { user, updateProfile } = useContext(AuthContext);
@@ -45,8 +46,10 @@ const Profile = () => {
       
       if (result.success) {
         setMessage({ text: 'Profile updated successfully!', type: 'success' });
+        toast.success('Profile updated successfully');
       } else {
         setMessage({ text: result.error, type: 'error' });
+        toast.error(result.error);
       }
     } catch (err) {
       setMessage({ 
@@ -54,6 +57,7 @@ const Profile = () => {
         type: 'error' 
       });
       console.error(err);
+      toast.error('Failed to update profile');
     } finally {
       setLoading(false);
     }
@@ -64,11 +68,17 @@ const Profile = () => {
       await courseService.unenrollCourse(courseId);
       setEnrolledCourses(enrolledCourses.filter(course => course.course_id !== courseId));
       setMessage({ text: 'Successfully unenrolled from course', type: 'success' });
+      toast.success('Successfully unenrolled from course');
     } catch (error) {
       setMessage({ text: 'Failed to unenroll from course', type: 'error' });
       console.error('Error unenrolling:', error);
+      toast.error('Failed to unenroll from course');
     }
   };
+
+  if (!user) {
+    return <div>Loading...</div>;
+  }
 
   return (
     <div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">

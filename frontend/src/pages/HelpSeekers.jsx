@@ -19,6 +19,7 @@ const HelpSeekers = () => {
   const [editingPost, setEditingPost] = useState(null);
   const [hasEnrolledCourses, setHasEnrolledCourses] = useState(true);
   const navigate = useNavigate();
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -160,15 +161,29 @@ const HelpSeekers = () => {
   );
 
   return (
-    <div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+    <div className="max-w-7xl mx-auto py-4 sm:py-6 px-4 sm:px-6 lg:px-8">
       <div className="md:flex">
-        {/* Sidebar */}
+        {/* Sidebar - hidden on small screens, shown in a different layout */}
         <div className="md:w-64 flex-shrink-0 mb-6 md:mb-0 md:mr-6">
           <div className="bg-white shadow rounded-lg overflow-hidden">
-            <div className="p-4 border-b border-gray-200">
+            <div className="p-4 border-b border-gray-200 flex justify-between items-center">
               <h2 className="text-lg font-medium text-gray-900">Courses</h2>
+              <button 
+                className="md:hidden text-gray-500 hover:text-gray-700"
+                onClick={() => setSidebarOpen(!sidebarOpen)}
+              >
+                {sidebarOpen ? (
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                ) : (
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16m-7 6h7" />
+                  </svg>
+                )}
+              </button>
             </div>
-            <div className="p-4">
+            <div className={`p-4 ${sidebarOpen ? 'block' : 'hidden md:block'}`}>
               <ul className="space-y-2">
                 <li>
                   <button 
@@ -200,14 +215,14 @@ const HelpSeekers = () => {
         {/* Main content */}
         <div className="flex-1">
           <div className="bg-white shadow rounded-lg overflow-hidden">
-            <div className="p-4 border-b border-gray-200 flex justify-between items-center">
-              <h1 className="text-2xl font-bold text-gray-900">Help Seekers</h1>
+            <div className="p-4 border-b border-gray-200 flex flex-col sm:flex-row sm:justify-between sm:items-center">
+              <h1 className="text-xl sm:text-2xl font-bold text-gray-900 mb-4 sm:mb-0">Help Seekers</h1>
               <button
                 onClick={() => {
                   setShowPostForm(true);
                   setEditingPost(null);
                 }}
-                className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
+                className="inline-flex items-center justify-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
               >
                 Ask for Help
               </button>

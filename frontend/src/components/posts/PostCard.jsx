@@ -84,8 +84,8 @@ const PostCard = ({ post, onEdit, onDelete, onReport, onJoinGroup }) => {
   return (
     <div className="bg-white shadow rounded-lg overflow-hidden">
       <div className="p-4">
-        <div className="flex items-center justify-between mb-2">
-          <div className="flex items-center">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-2">
+          <div className="flex items-center mb-3 sm:mb-0">
             <div className="h-10 w-10 rounded-full bg-primary text-white flex items-center justify-center">
               {userInitial}
             </div>
@@ -100,7 +100,7 @@ const PostCard = ({ post, onEdit, onDelete, onReport, onJoinGroup }) => {
             </div>
           </div>
           
-          <div className="flex space-x-2">
+          <div className="flex flex-wrap gap-2">
             {(course || post.course_name) && (
               <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
                 {course?.course_code || post.course_name}
@@ -121,8 +121,8 @@ const PostCard = ({ post, onEdit, onDelete, onReport, onJoinGroup }) => {
           <p className="text-gray-800 whitespace-pre-line">{content}</p>
         </div>
         
-        <div className="mt-4 flex items-center justify-between text-gray-500 text-sm">
-          <div className="flex items-center space-x-4">
+        <div className="mt-4 flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-3 sm:space-y-0">
+          <div className="flex flex-wrap items-center gap-4">
             <button 
               className="inline-flex items-center text-gray-500 hover:text-gray-700"
               aria-label="Comments"
@@ -143,7 +143,7 @@ const PostCard = ({ post, onEdit, onDelete, onReport, onJoinGroup }) => {
             )}
           </div>
           
-          <div className="flex space-x-2">
+          <div className="flex space-x-2 justify-end">
             {onEdit && isAuthorOrAdmin && (
               <button 
                 type="button" 

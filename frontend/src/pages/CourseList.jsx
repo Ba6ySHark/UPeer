@@ -212,15 +212,15 @@ const CourseList = () => {
         {!isAdmin && enrolledCourses.length > 0 && (
           <div className="mb-8">
             <h2 className="text-lg font-medium text-gray-900 mb-4">Your Enrolled Courses</h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {enrolledCourses.map(course => (
                 <div key={course.course_id} className="bg-white overflow-hidden shadow rounded-lg">
-                  <div className="p-5">
-                    <div className="flex items-center">
-                      <div className="flex-shrink-0 bg-primary rounded-md p-3">
+                  <div className="p-4 sm:p-5">
+                    <div className="flex flex-col sm:flex-row sm:items-center">
+                      <div className="flex-shrink-0 bg-primary rounded-md p-3 mb-3 sm:mb-0">
                         <AcademicCapIcon className="h-6 w-6 text-white" />
                       </div>
-                      <div className="ml-5">
+                      <div className="sm:ml-5">
                         <h3 className="text-lg font-medium text-gray-900">{course.course_name}</h3>
                         <p className="text-sm text-gray-500">{course.course_code}</p>
                       </div>
@@ -228,16 +228,16 @@ const CourseList = () => {
                     <div className="mt-4">
                       <p className="text-sm text-gray-500 line-clamp-2">{course.description || 'No description available.'}</p>
                     </div>
-                    <div className="mt-5 flex items-center justify-between">
+                    <div className="mt-5 flex flex-col space-y-2 sm:flex-row sm:space-y-0 sm:space-x-2 sm:justify-between">
                       <Link
                         to={`/board?course=${course.course_id}`}
-                        className="inline-flex items-center px-3 py-1.5 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-primary hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
+                        className="inline-flex justify-center items-center px-3 py-1.5 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-primary hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
                       >
                         View Posts
                       </Link>
                       <button
                         onClick={() => handleUnenroll(course.course_id)}
-                        className="inline-flex items-center px-3 py-1.5 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
+                        className="inline-flex justify-center items-center px-3 py-1.5 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
                       >
                         Unenroll
                       </button>
@@ -253,23 +253,23 @@ const CourseList = () => {
         <div>
           <h2 className="text-lg font-medium text-gray-900 mb-4">All Available Courses</h2>
           {filteredCourses.length === 0 ? (
-            <div className="text-center py-12 bg-white rounded-lg shadow">
-              <BookOpenIcon className="mx-auto h-12 w-12 text-gray-400" />
+            <div className="text-center py-8 sm:py-12 bg-white rounded-lg shadow">
+              <BookOpenIcon className="mx-auto h-10 w-10 sm:h-12 sm:w-12 text-gray-400" />
               <h3 className="mt-2 text-lg font-medium text-gray-900">No courses found</h3>
               <p className="mt-1 text-sm text-gray-500">
                 {searchTerm ? 'Try a different search term.' : 'Courses will appear here when available.'}
               </p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {filteredCourses.map(course => (
                 <div key={course.course_id} className="bg-white overflow-hidden shadow rounded-lg">
-                  <div className="p-5">
-                    <div className="flex items-center">
-                      <div className="flex-shrink-0 bg-gray-500 rounded-md p-3">
+                  <div className="p-4 sm:p-5">
+                    <div className="flex flex-col sm:flex-row sm:items-center">
+                      <div className="flex-shrink-0 bg-gray-500 rounded-md p-3 mb-3 sm:mb-0">
                         <BookOpenIcon className="h-6 w-6 text-white" />
                       </div>
-                      <div className="ml-5">
+                      <div className="sm:ml-5">
                         <h3 className="text-lg font-medium text-gray-900">{course.course_name}</h3>
                         <p className="text-sm text-gray-500">{course.course_code}</p>
                       </div>
