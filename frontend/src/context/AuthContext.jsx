@@ -1,48 +1,61 @@
-import { createContext, useState, useEffect } from 'react';
+import React, { createContext, useState, useEffect, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { jwtDecode } from 'jwt-decode';
 import axios from 'axios';
+import { jwtDecode } from 'jwt-decode';
 import axiosInstance from '../services/axiosConfig';
 import { API_URL } from '../config';
 
+// Create auth context
 export const AuthContext = createContext();
 
+// Custom hook for easier access to auth context
+export const useAuth = () => useContext(AuthContext);
+
+// Provider component
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
-  const [token, setToken] = useState(null);
+  const [token, setToken] = useState(localStorage.getItem('token'));
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
-
-  // Load user from localStorage on initial render
+  
+  // Check if user is authenticated on mount
   useEffect(() => {
-    const storedToken = localStorage.getItem('token');
-    if (storedToken) {
-      try {
-        const decoded = jwtDecode(storedToken);
-        const currentTime = Date.now() / 1000;
-        
-        if (decoded.exp > currentTime) {
-          setToken(storedToken);
-          setUser({
-            id: decoded.user_id,
-            email: decoded.email,
-            isAdmin: decoded.is_admin
-          });
-        } else {
+    const checkAuth = async () => {
+      const storedToken = localStorage.getItem('token');
+      if (storedToken) {
+        try {
+          const decoded = jwtDecode(storedToken);
+          const currentTime = Date.now() / 1000;
+          
+          if (decoded.exp > currentTime) {
+            setToken(storedToken);
+            setUser({
+              id: decoded.user_id,
+              email: decoded.email,
+              name: decoded.name,
+              isAdmin: decoded.is_admin
+            });
+          } else {
+            localStorage.removeItem('token');
+            setToken(null);
+          }
+        } catch (error) {
+          console.error('Token validation error:', error);
           localStorage.removeItem('token');
+          setToken(null);
         }
-      } catch (error) {
-        localStorage.removeItem('token');
       }
-    }
-    setLoading(false);
+      setLoading(false);
+    };
+    
+    checkAuth();
   }, []);
-
+  
   // Register a new user
   const register = async (name, email, password) => {
     try {
-      // For registration and login, we use the regular axios since we don't have a token yet
-      const response = await axios.post(`${API_URL}/api/auth/register/`, {
+      // Use the backend URL directly
+      const response = await axios.post(`http://localhost:8001/api/auth/register/`, {
         name,
         email,
         password
@@ -61,6 +74,7 @@ export const AuthProvider = ({ children }) => {
       
       return { success: true };
     } catch (error) {
+      console.error("Registration error:", error);
       return {
         success: false,
         error: error.response?.data?.error || 'An error occurred during registration'
@@ -71,8 +85,8 @@ export const AuthProvider = ({ children }) => {
   // Login a user
   const login = async (email, password) => {
     try {
-      // For registration and login, we use the regular axios since we don't have a token yet
-      const response = await axios.post(`${API_URL}/api/auth/login/`, {
+      // Use the backend URL directly
+      const response = await axios.post(`http://localhost:8001/api/auth/login/`, {
         email,
         password
       });
@@ -90,6 +104,7 @@ export const AuthProvider = ({ children }) => {
       
       return { success: true };
     } catch (error) {
+      console.error("Login error:", error);
       return {
         success: false,
         error: error.response?.data?.error || 'Invalid credentials'

@@ -15,7 +15,8 @@ CREATE TABLE IF NOT EXISTS users (
 
 CREATE TABLE IF NOT EXISTS courses (
   course_id    INT AUTO_INCREMENT PRIMARY KEY,
-  course_name  VARCHAR(100) NOT NULL
+  course_name  VARCHAR(100) NOT NULL,
+  description  TEXT NULL
 ) ENGINE=InnoDB;
 
 CREATE TABLE IF NOT EXISTS user_courses (
@@ -103,11 +104,11 @@ INSERT INTO users (name, email, password, is_admin) VALUES
 ('John Doe', 'john@example.com', SHA2('password123', 256), 0),
 ('Jane Smith', 'jane@example.com', SHA2('password123', 256), 0);
 
-INSERT INTO courses (course_name) VALUES 
-('CPSC 331 - Data Structures'),
-('MATH 271 - Discrete Mathematics'),
-('CPSC 355 - Computing Machinery'),
-('PHIL 279 - Logic I');
+INSERT INTO courses (course_name, description) VALUES 
+('CPSC 331 - Data Structures', 'Learn about data structures and algorithms for organizing and processing data.'),
+('MATH 271 - Discrete Mathematics', 'Introduction to logic, set theory, and discrete mathematics.'),
+('CPSC 355 - Computing Machinery', 'Introduction to computer systems and assembly language programming.'),
+('PHIL 279 - Logic I', 'Introduction to formal logic and critical thinking.');
 
 -- Enroll users in courses
 INSERT INTO user_courses (user_id, course_id) VALUES 

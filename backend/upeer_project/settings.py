@@ -97,11 +97,11 @@ WSGI_APPLICATION = 'upeer_project.wsgi.application'
 DATABASES = {
     "default": {
         "ENGINE": env.str('DB_ENGINE', default='django.db.backends.mysql'),
-        "NAME": env.str('DB_NAME', default='myproject'),
-        "USER": env.str('DB_USER', default='myproj_user'),
-        "PASSWORD": env.str('DB_PASSWORD', default='s0m3‑str0ng‑p4ss'),
-        "HOST": env.str('DB_HOST', default='127.0.0.1'),
-        "PORT": env.str('DB_PORT', default='3306'),
+        "NAME": os.environ.get('DB_NAME', env.str('DB_NAME', default='myproject')),
+        "USER": os.environ.get('DB_USER', env.str('DB_USER', default='myproj_user')),
+        "PASSWORD": os.environ.get('DB_PASSWORD', env.str('DB_PASSWORD', default='s0m3‑str0ng‑p4ss')),
+        "HOST": os.environ.get('DB_HOST', env.str('DB_HOST', default='127.0.0.1')),
+        "PORT": os.environ.get('DB_PORT', env.str('DB_PORT', default='3306')),
         "OPTIONS": {
             "charset": env.str('DB_OPTIONS_CHARSET', default='utf8mb4'),
         },

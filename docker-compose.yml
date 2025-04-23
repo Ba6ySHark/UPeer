@@ -1,0 +1,58 @@
+version: '3.8'
+
+services:
+  # Database service
+  db:
+    image: mysql:8.0
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: myproject
+    ports:
+      - "3307:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - upeer_network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Backend API service
+  backend:
+    build:
+      context: ./backend
+    ports:
+      - "8001:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      - DB_HOST=db
+      - DB_USER=root
+      - DB_PASSWORD=root
+      - DB_NAME=myproject
+      - DEBUG=True
+    networks:
+      - upeer_network
+
+  # Frontend service
+  frontend:
+    build:
+      context: ./frontend
+    ports:
+      - "3001:3000"
+    depends_on:
+      - backend
+    environment:
+      - VITE_API_URL=http://localhost:8001
+    networks:
+      - upeer_network
+
+networks:
+  upeer_network:
+    driver: bridge
+
+volumes:
+  mysql_data: 
