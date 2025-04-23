@@ -71,8 +71,8 @@ const Helpers = () => {
     try {
       const newPost = await postService.createPost(
         postData.content, 
-        postData.courseId, 
-        'offering'
+        postData.course_id, 
+        postData.post_type
       );
       
       setPosts(prevPosts => [newPost, ...prevPosts]);
@@ -228,7 +228,7 @@ const Helpers = () => {
                   <h3 className="text-lg font-medium text-gray-900 mb-3">Edit Your Post</h3>
                   <PostForm 
                     isEditing
-                    initialPost={editingPost}
+                    initialData={editingPost}
                     courses={courses}
                     postType="offering"
                     onSubmit={(data) => handleUpdatePost(editingPost.post_id, data.content)}

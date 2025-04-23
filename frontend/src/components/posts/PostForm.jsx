@@ -2,10 +2,10 @@ import { useState } from 'react';
 import PropTypes from 'prop-types';
 import { XMarkIcon } from '@heroicons/react/24/outline';
 
-const PostForm = ({ initialData = {}, onSubmit, onCancel, courses = [] }) => {
+const PostForm = ({ initialData = {}, onSubmit, onCancel, courses = [], postType: initialPostType }) => {
   const [content, setContent] = useState(initialData.content || '');
   const [courseId, setCourseId] = useState(initialData.course_id || '');
-  const [postType, setPostType] = useState(initialData.post_type || 'seeking');
+  const [postType, setPostType] = useState(initialData.post_type || initialPostType || 'seeking');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
 
@@ -90,6 +90,23 @@ const PostForm = ({ initialData = {}, onSubmit, onCancel, courses = [] }) => {
             </div>
             
             <div>
+              <label htmlFor="post-type" className="block text-sm font-medium text-gray-700">
+                Post Type
+              </label>
+              <select
+                id="post-type"
+                name="post-type"
+                className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm rounded-md"
+                value={postType}
+                onChange={(e) => setPostType(e.target.value)}
+                disabled={isSubmitting || initialPostType}
+              >
+                <option value="seeking">I'm seeking help</option>
+                <option value="offering">I'm offering help</option>
+              </select>
+            </div>
+            
+            <div>
               <label htmlFor="content" className="block text-sm font-medium text-gray-700">
                 Post Content
               </label>
@@ -141,7 +158,8 @@ PostForm.propTypes = {
   }),
   onSubmit: PropTypes.func.isRequired,
   onCancel: PropTypes.func,
-  courses: PropTypes.array
+  courses: PropTypes.array,
+  postType: PropTypes.string
 };
 
 export default PostForm; 
