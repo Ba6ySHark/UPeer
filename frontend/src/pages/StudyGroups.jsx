@@ -51,10 +51,8 @@ const StudyGroups = () => {
         setGroups(data);
         
         // If there are groups but none selected, select the most recent one
-        // This ensures that when a user clicks "Join Group" on a post and is redirected,
-        // the appropriate group is selected
         if (data.length > 0 && !selectedGroup) {
-          setSelectedGroup(data[0]); // Groups are ordered by most recent first
+          setSelectedGroup(data[0]); // Groups are ordered by most recent ones
         }
       } catch (err) {
         setError('Failed to load your study groups. Please try again.');

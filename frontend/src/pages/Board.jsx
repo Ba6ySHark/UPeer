@@ -16,16 +16,14 @@ const Board = () => {
   const [error, setError] = useState('');
   const [showPostForm, setShowPostForm] = useState(false);
   const [editingPost, setEditingPost] = useState(null);
-  const [viewMode, setViewMode] = useState('all'); // 'all' or 'enrolled'
+  const [viewMode, setViewMode] = useState('all');
   const [hasEnrolledCourses, setHasEnrolledCourses] = useState(true);
 
-  // Fetch posts and courses on component mount
   useEffect(() => {
     const fetchData = async () => {
       try {
         setLoading(true);
         
-        // Only fetch enrolled courses for regular users, all courses for admins
         let coursesToShow = [];
         if (isAdmin) {
           const allCourses = await courseService.getAllCourses();
@@ -39,7 +37,6 @@ const Board = () => {
         }
         
         // For admins, always show all posts regardless of enrollment
-        // For regular users, respect the view mode
         if (isAdmin) {
           const allPosts = await postService.getPosts(selectedCourse);
           setPosts(allPosts);
@@ -61,40 +58,32 @@ const Board = () => {
     fetchData();
   }, [selectedCourse, viewMode, isAdmin]);
 
-  // Handle filter change (course selection)
   const handleFilterChange = (courseId) => {
     setSelectedCourse(courseId);
-    // If a specific course is selected and user is not admin, switch to 'all' view mode
     if (courseId !== null && !isAdmin) {
       setViewMode('all');
     }
   };
   
-  // Handle view mode change (all posts vs enrolled courses posts)
   const handleViewModeChange = (mode) => {
     setViewMode(mode);
-    // Clear course selection when switching to enrolled mode
     if (mode === 'enrolled') {
       setSelectedCourse(null);
     }
   };
 
-  // Handle post creation/update success
   const handlePostSuccess = (newPost) => {
     if (editingPost) {
-      // Update existing post in the list
       setPosts(posts.map(post => 
         post.post_id === newPost.post_id ? newPost : post
       ));
       setEditingPost(null);
     } else {
-      // Add new post to the list
       setPosts([newPost, ...posts]);
       setShowPostForm(false);
     }
   };
 
-  // Handle creating a new post
   const handleCreatePost = async (postData) => {
     try {
       const newPost = await postService.createPost(
@@ -109,23 +98,19 @@ const Board = () => {
     }
   };
 
-  // Handle post deletion
   const handleDeletePost = (postId) => {
     setPosts(posts.filter(post => post.post_id !== postId));
   };
 
-  // Handle post report
   const handleReportPost = (postId) => {
-    // Optional: Show a confirmation message
+    // todo
   };
 
-  // Handle post edit
   const handleEditPost = (post) => {
     setEditingPost(post);
-    setShowPostForm(false); // Close new post form if open
+    setShowPostForm(false); 
   };
 
-  // No enrolled courses message
   const renderNoEnrolledCoursesMessage = () => (
     <div className="text-center py-12 bg-white rounded-lg shadow">
       <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-blue-100">
@@ -156,7 +141,6 @@ const Board = () => {
                 <h2 className="text-lg font-medium text-gray-900">Your Courses</h2>
               </div>
               
-              {/* View mode toggle - only for non-admin users */}
               {!isAdmin && (
                 <div className="p-4 border-b border-gray-200">
                   <div className="flex rounded-md shadow-sm">
@@ -199,7 +183,6 @@ const Board = () => {
                   </div>
                 ) : (
                   <ul className="space-y-2">
-                    {/* Always show "All Posts" option */}
                     <li>
                       <button 
                         onClick={() => handleFilterChange(null)}
@@ -211,7 +194,6 @@ const Board = () => {
                       </button>
                     </li>
                     
-                    {/* Show enrolled courses */}
                     {courses.map(course => (
                       <li key={course.course_id}>
                         <button 
@@ -230,9 +212,7 @@ const Board = () => {
             </div>
           </div>
           
-          {/* Main content area */}
           <div className="flex-1">
-            {/* Post creation button */}
             {!showPostForm && !editingPost && (
               <button
                 onClick={() => setShowPostForm(true)}
@@ -243,7 +223,6 @@ const Board = () => {
               </button>
             )}
             
-            {/* Post creation/editing form */}
             {(showPostForm || editingPost) && (
               <div className="mb-6">
                 <PostForm 
@@ -258,7 +237,6 @@ const Board = () => {
               </div>
             )}
             
-            {/* Show "no enrolled courses" message for regular users in enrolled mode with no courses */}
             {!isAdmin && viewMode === 'enrolled' && !hasEnrolledCourses ? (
               renderNoEnrolledCoursesMessage()
             ) : loading ? (

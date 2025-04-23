@@ -35,7 +35,6 @@ function App() {
                 <Route path="/help-seekers" element={<HelpSeekers />} />
                 <Route path="/helpers" element={<Helpers />} />
                 <Route path="/study-groups" element={<StudyGroups />} />
-                {/* Add more protected routes as needed */}
               </Route>
               
               {/* Admin routes */}
@@ -52,8 +51,6 @@ function App() {
             </div>
           </footer>
         </div>
-        
-        {/* Toast notifications */}
         <Toaster position="top-right" />
       </AuthProvider>
     </Router>

@@ -15,7 +15,6 @@ const Login = () => {
   const navigate = useNavigate();
   const location = useLocation();
   
-  // Get the redirect URL from location state, or default to home page
   const from = location.state?.from?.pathname || '/';
   
   const handleChange = (e) => {
@@ -25,7 +24,6 @@ const Login = () => {
       [name]: value
     });
     
-    // Clear error for this field when user starts typing
     if (errors[name]) {
       setErrors({
         ...errors,
