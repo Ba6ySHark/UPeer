@@ -243,6 +243,77 @@ class PostManager:
                     'author': row[3]
                 })
             return posts
+    
+    @staticmethod
+    def get_posts_for_enrolled_courses(user_id, post_type=None):
+        """Get posts that are related to courses the user is enrolled in"""
+        try:
+            with connection.cursor() as cursor:
+                params = [user_id]
+                conditions = ["p.is_active = 1", "uc.user_id = %s"]
+                
+                if post_type is not None:
+                    conditions.append("p.post_type = %s")
+                    params.append(post_type)
+                    
+                where_clause = " AND ".join(conditions)
+                
+                query = f"""
+                    SELECT p.post_id, p.content, p.date_created, p.post_type, u.name AS author, c.course_name 
+                    FROM posts p 
+                    JOIN users u ON p.user_id = u.user_id 
+                    JOIN courses c ON p.course_id = c.course_id 
+                    JOIN user_courses uc ON p.course_id = uc.course_id
+                    WHERE {where_clause}
+                    ORDER BY p.date_created DESC
+                """
+                cursor.execute(query, params)
+                posts = []
+                for row in cursor.fetchall():
+                    posts.append({
+                        'post_id': row[0],
+                        'content': row[1],
+                        'date_created': row[2],
+                        'post_type': row[3],
+                        'author': row[4],
+                        'course_name': row[5]
+                    })
+                return posts
+        except DatabaseError as e:
+            # If there's an error related to the post_type column
+            if "Unknown column 'p.post_type'" in str(e):
+                # Fallback query without post_type
+                with connection.cursor() as cursor:
+                    params = [user_id]
+                    conditions = ["p.is_active = 1", "uc.user_id = %s"]
+                    
+                    where_clause = " AND ".join(conditions)
+                    
+                    # Use a default value for post_type since it doesn't exist
+                    query = f"""
+                        SELECT p.post_id, p.content, p.date_created, 'seeking' AS post_type, u.name AS author, c.course_name 
+                        FROM posts p 
+                        JOIN users u ON p.user_id = u.user_id 
+                        JOIN courses c ON p.course_id = c.course_id 
+                        JOIN user_courses uc ON p.course_id = uc.course_id
+                        WHERE {where_clause}
+                        ORDER BY p.date_created DESC
+                    """
+                    cursor.execute(query, params)
+                    posts = []
+                    for row in cursor.fetchall():
+                        posts.append({
+                            'post_id': row[0],
+                            'content': row[1],
+                            'date_created': row[2],
+                            'post_type': row[3],
+                            'author': row[4],
+                            'course_name': row[5]
+                        })
+                    return posts
+            else:
+                # For other database errors, re-raise
+                raise
 
 class CommentManager:
     @staticmethod

@@ -7,11 +7,13 @@ from .views import (
     CommentListView, 
     CommentDetailView, 
     join_group_from_post,
-    debug_post_groups
+    debug_post_groups,
+    enrolled_posts
 )
 
 urlpatterns = [
     path('', PostListView.as_view(), name='post-list'),
+    path('enrolled/', enrolled_posts, name='enrolled-posts'),
     path('<int:post_id>/', PostDetailView.as_view(), name='post-detail'),
     path('<int:post_id>/report/', PostReportView.as_view(), name='post-report'),
     path('reported/', ReportedPostListView.as_view(), name='reported-posts'),

@@ -341,3 +341,39 @@ def debug_post_groups(request):
         'post_group_associations': posts_with_groups,
         'count': len(posts_with_groups)
     }, status=status.HTTP_200_OK)
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def enrolled_posts(request):
+    """Get posts related to courses the user is enrolled in"""
+    post_type = request.query_params.get('post_type', None)
+    
+    try:
+        # Get user's enrolled courses
+        posts = PostManager.get_posts_for_enrolled_courses(
+            user_id=request.user.user_id,
+            post_type=post_type
+        )
+        
+        # Check if the user has any enrolled courses
+        if not posts:
+            # Get user's enrolled courses to determine if they have any
+            user_courses = CourseManager.get_user_courses(request.user.user_id)
+            if not user_courses:
+                # User has no enrolled courses
+                return Response({
+                    'posts': [],
+                    'has_enrolled_courses': False
+                }, status=status.HTTP_200_OK)
+        
+        serializer = PostSerializer(posts, many=True)
+        return Response({
+            'posts': serializer.data,
+            'has_enrolled_courses': True
+        }, status=status.HTTP_200_OK)
+        
+    except Exception as e:
+        return Response(
+            {'error': f'Error fetching enrolled posts: {str(e)}'},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
