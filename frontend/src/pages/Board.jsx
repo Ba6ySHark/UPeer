@@ -1,10 +1,14 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useContext } from 'react';
+import { Link } from 'react-router-dom';
 import { courseService, postService } from '../services/api';
 import PostCard from '../components/posts/PostCard';
 import PostForm from '../components/posts/PostForm';
-import { PlusIcon } from '@heroicons/react/24/solid';
+import { PlusIcon, AcademicCapIcon } from '@heroicons/react/24/solid';
+import { AuthContext } from '../context/AuthContext';
 
 const Board = () => {
+  const { user } = useContext(AuthContext);
+  const isAdmin = user?.isAdmin;
   const [posts, setPosts] = useState([]);
   const [courses, setCourses] = useState([]);
   const [selectedCourse, setSelectedCourse] = useState(null);
@@ -13,20 +17,38 @@ const Board = () => {
   const [showPostForm, setShowPostForm] = useState(false);
   const [editingPost, setEditingPost] = useState(null);
   const [enrolledCourses, setEnrolledCourses] = useState([]);
+  const [viewMode, setViewMode] = useState('all'); // 'all' or 'enrolled'
+  const [hasEnrolledCourses, setHasEnrolledCourses] = useState(true);
 
   // Fetch posts and courses on component mount
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [allPosts, allCourses, userCourses] = await Promise.all([
-          postService.getPosts(selectedCourse),
-          courseService.getAllCourses(),
-          courseService.getUserCourses()
-        ]);
+        setLoading(true);
         
-        setPosts(allPosts);
+        // Always get all courses for the sidebar
+        const allCourses = await courseService.getAllCourses();
         setCourses(allCourses);
-        setEnrolledCourses(userCourses);
+        
+        // Only check enrolled courses for non-admin users
+        if (!isAdmin) {
+          const userCourses = await courseService.getUserCourses();
+          setEnrolledCourses(userCourses);
+          setHasEnrolledCourses(userCourses.length > 0);
+        }
+        
+        // For admins, always show all posts regardless of enrollment
+        // For regular users, respect the view mode
+        if (isAdmin) {
+          const allPosts = await postService.getPosts(selectedCourse);
+          setPosts(allPosts);
+        } else if (viewMode === 'enrolled') {
+          const response = await postService.getEnrolledPosts();
+          setPosts(response.posts || []);
+        } else {
+          const allPosts = await postService.getPosts(selectedCourse);
+          setPosts(allPosts);
+        }
       } catch (err) {
         setError('Failed to load data. Please try again.');
         console.error('Error fetching data:', err);
@@ -36,21 +58,23 @@ const Board = () => {
     };
 
     fetchData();
-  }, [selectedCourse]);
+  }, [selectedCourse, viewMode, isAdmin]);
 
-  // Fetch posts when filter changes
-  const handleFilterChange = async (courseId) => {
+  // Handle filter change (course selection)
+  const handleFilterChange = (courseId) => {
     setSelectedCourse(courseId);
-    setLoading(true);
-    
-    try {
-      const filteredPosts = await postService.getPosts(courseId);
-      setPosts(filteredPosts);
-    } catch (err) {
-      setError('Failed to filter posts. Please try again.');
-      console.error('Error filtering posts:', err);
-    } finally {
-      setLoading(false);
+    // If a specific course is selected and user is not admin, switch to 'all' view mode
+    if (courseId !== null && !isAdmin) {
+      setViewMode('all');
+    }
+  };
+  
+  // Handle view mode change (all posts vs enrolled courses posts)
+  const handleViewModeChange = (mode) => {
+    setViewMode(mode);
+    // Clear course selection when switching to enrolled mode
+    if (mode === 'enrolled') {
+      setSelectedCourse(null);
     }
   };
 
@@ -92,6 +116,7 @@ const Board = () => {
       // Refresh enrolled courses
       const userCourses = await courseService.getUserCourses();
       setEnrolledCourses(userCourses);
+      setHasEnrolledCourses(userCourses.length > 0);
     } catch (error) {
       console.error('Error enrolling in course:', error);
     }
@@ -99,8 +124,29 @@ const Board = () => {
 
   // Check if user is enrolled in a course
   const isEnrolled = (courseId) => {
+    if (isAdmin) return true; // Admins can see all courses regardless of enrollment
     return enrolledCourses.some(course => course.course_id === courseId);
   };
+
+  // No enrolled courses message
+  const renderNoEnrolledCoursesMessage = () => (
+    <div className="text-center py-12 bg-white rounded-lg shadow">
+      <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-blue-100">
+        <AcademicCapIcon className="h-6 w-6 text-blue-600" aria-hidden="true" />
+      </div>
+      <h3 className="mt-2 text-lg font-medium text-gray-900">No Enrolled Courses</h3>
+      <p className="mt-1 text-sm text-gray-500">
+        You need to enroll in courses to see relevant posts.
+      </p>
+      <div className="mt-6">
+        <Link to="/courses"
+          className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-primary hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
+        >
+          Go to Courses
+        </Link>
+      </div>
+    </div>
+  );
 
   return (
     <div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
@@ -112,38 +158,76 @@ const Board = () => {
               <div className="p-4 border-b border-gray-200">
                 <h2 className="text-lg font-medium text-gray-900">Courses</h2>
               </div>
-              <div className="p-4">
-                <ul className="space-y-2">
-                  <li>
-                    <button 
-                      onClick={() => handleFilterChange(null)}
-                      className={`w-full text-left px-2 py-1 rounded ${
-                        selectedCourse === null ? 'bg-primary text-white' : 'text-gray-700 hover:bg-gray-100'
+              
+              {/* View mode toggle - only for non-admin users */}
+              {!isAdmin && (
+                <div className="p-4 border-b border-gray-200">
+                  <div className="flex rounded-md shadow-sm">
+                    <button
+                      type="button"
+                      onClick={() => handleViewModeChange('all')}
+                      className={`relative inline-flex items-center w-1/2 px-4 py-2 text-sm font-medium rounded-l-md ${
+                        viewMode === 'all'
+                          ? 'bg-primary text-white'
+                          : 'bg-white text-gray-700 hover:bg-gray-50'
                       }`}
                     >
                       All Posts
                     </button>
-                  </li>
+                    <button
+                      type="button"
+                      onClick={() => handleViewModeChange('enrolled')}
+                      className={`relative inline-flex items-center w-1/2 px-4 py-2 text-sm font-medium rounded-r-md ${
+                        viewMode === 'enrolled'
+                          ? 'bg-primary text-white'
+                          : 'bg-white text-gray-700 hover:bg-gray-50'
+                      }`}
+                    >
+                      My Courses
+                    </button>
+                  </div>
+                </div>
+              )}
+              
+              <div className="p-4">
+                <ul className="space-y-2">
+                  {/* Always show "All Posts" for admins */}
+                  {(viewMode === 'all' || isAdmin) && (
+                    <li>
+                      <button 
+                        onClick={() => handleFilterChange(null)}
+                        className={`w-full text-left px-2 py-1 rounded ${
+                          selectedCourse === null ? 'bg-primary text-white' : 'text-gray-700 hover:bg-gray-100'
+                        }`}
+                      >
+                        All Posts
+                      </button>
+                    </li>
+                  )}
+                  
                   {courses.map(course => (
                     <li key={course.course_id}>
-                      <div className="flex justify-between items-center">
-                        <button 
-                          onClick={() => handleFilterChange(course.course_id)}
-                          className={`text-left px-2 py-1 rounded ${
-                            selectedCourse === course.course_id ? 'bg-primary text-white' : 'text-gray-700 hover:bg-gray-100'
-                          }`}
-                        >
-                          {course.course_name}
-                        </button>
-                        {!isEnrolled(course.course_id) && (
-                          <button
-                            onClick={() => handleEnroll(course.course_id)}
-                            className="ml-2 text-xs text-primary hover:text-primary-dark"
+                      {/* Show all courses for admins or filter by enrollment for regular users */}
+                      {(isAdmin || viewMode === 'all' || (viewMode === 'enrolled' && isEnrolled(course.course_id))) && (
+                        <div className="flex justify-between items-center">
+                          <button 
+                            onClick={() => handleFilterChange(course.course_id)}
+                            className={`text-left px-2 py-1 rounded ${
+                              selectedCourse === course.course_id ? 'bg-primary text-white' : 'text-gray-700 hover:bg-gray-100'
+                            }`}
                           >
-                            Enroll
+                            {course.course_name}
                           </button>
-                        )}
-                      </div>
+                          {!isAdmin && !isEnrolled(course.course_id) && viewMode === 'all' && (
+                            <button
+                              onClick={() => handleEnroll(course.course_id)}
+                              className="ml-2 text-xs text-primary hover:text-primary-dark"
+                            >
+                              Enroll
+                            </button>
+                          )}
+                        </div>
+                      )}
                     </li>
                   ))}
                 </ul>
@@ -180,46 +264,44 @@ const Board = () => {
               </div>
             )}
             
-            {/* Error message */}
-            {error && (
-              <div className="mb-4 rounded-md bg-red-50 p-4">
-                <p className="text-sm font-medium text-red-800">{error}</p>
-              </div>
-            )}
-            
-            {/* Loading state */}
-            {loading ? (
+            {/* Show "no enrolled courses" message for regular users in enrolled mode with no courses */}
+            {!isAdmin && viewMode === 'enrolled' && !hasEnrolledCourses ? (
+              renderNoEnrolledCoursesMessage()
+            ) : loading ? (
               <div className="flex justify-center py-12">
                 <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
               </div>
-            ) : posts.length === 0 ? (
-              // Empty state
-              <div className="text-center py-12 bg-white rounded-lg shadow">
-                <h3 className="mt-2 text-lg font-medium text-gray-900">No posts yet</h3>
-                <p className="mt-1 text-sm text-gray-500">
-                  {selectedCourse 
-                    ? 'Be the first to post in this course!' 
-                    : 'Start the conversation by creating a post.'}
-                </p>
-                <div className="mt-6">
-                  <button
-                    onClick={() => setShowPostForm(true)}
-                    className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-primary hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
-                  >
-                    <PlusIcon className="-ml-1 mr-2 h-5 w-5" />
-                    New Post
-                  </button>
+            ) : error ? (
+              <div className="bg-red-50 p-4 rounded-lg">
+                <div className="flex">
+                  <div className="flex-shrink-0">
+                    <svg className="h-5 w-5 text-red-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                    </svg>
+                  </div>
+                  <div className="ml-3">
+                    <h3 className="text-sm font-medium text-red-800">Failed to load posts</h3>
+                    <div className="mt-2 text-sm text-red-700">
+                      <p>{error}</p>
+                    </div>
+                  </div>
                 </div>
               </div>
+            ) : posts.length === 0 ? (
+              <div className="bg-white shadow rounded-lg p-6 text-center">
+                <h3 className="text-lg font-medium text-gray-900">No posts found</h3>
+                <p className="mt-1 text-sm text-gray-500">
+                  Be the first to create a post for this category.
+                </p>
+              </div>
             ) : (
-              // Post list
               <div className="space-y-4">
                 {posts.map(post => (
-                  <PostCard 
-                    key={post.post_id} 
-                    post={post} 
-                    onEdit={handleEditPost}
-                    onDelete={handleDeletePost}
+                  <PostCard
+                    key={post.post_id}
+                    post={post}
+                    onEdit={() => handleEditPost(post)}
+                    onDelete={() => handleDeletePost(post.post_id)}
                     onReport={handleReportPost}
                   />
                 ))}

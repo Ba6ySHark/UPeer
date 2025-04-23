@@ -1,13 +1,15 @@
 import { useState, useEffect, useContext } from 'react';
 import { toast } from 'react-hot-toast';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { courseService, postService, groupService } from '../services/api';
 import PostCard from '../components/posts/PostCard';
 import PostForm from '../components/posts/PostForm';
 import { AuthContext } from '../context/AuthContext';
-import { PlusIcon } from '@heroicons/react/24/outline';
+import { PlusIcon, AcademicCapIcon } from '@heroicons/react/24/outline';
 
 const HelpSeekers = () => {
+  const { user } = useContext(AuthContext);
+  const isAdmin = user?.isAdmin;
   const [posts, setPosts] = useState([]);
   const [courses, setCourses] = useState([]);
   const [selectedCourse, setSelectedCourse] = useState(null);
@@ -15,38 +17,51 @@ const HelpSeekers = () => {
   const [error, setError] = useState('');
   const [showPostForm, setShowPostForm] = useState(false);
   const [editingPost, setEditingPost] = useState(null);
-  const { user } = useContext(AuthContext);
+  const [hasEnrolledCourses, setHasEnrolledCourses] = useState(true);
   const navigate = useNavigate();
 
   useEffect(() => {
     const fetchData = async () => {
-      setLoading(true);
       try {
-        const [allPosts, allCourses] = await Promise.all([
-          postService.getPosts(selectedCourse, 'seeking'),
-          courseService.getAllCourses()
-        ]);
+        setLoading(true);
         
-        console.log('Received posts details:', allPosts);
-        // Check if posts have has_group property
-        const enhancedPosts = allPosts.map(post => ({
-          ...post,
-          has_group: post.has_group || true // For testing, set to true to make button visible
-        }));
-        
-        setPosts(enhancedPosts);
+        // Fetch all courses and user's enrolled courses
+        const allCourses = await courseService.getAllCourses();
         setCourses(allCourses);
+        
+        // Only check enrolled courses for non-admin users
+        if (!isAdmin) {
+          const userCourses = await courseService.getUserCourses();
+          setHasEnrolledCourses(userCourses.length > 0);
+        }
+        
+        // Fetch posts based on selected course or get all enrolled posts for admins
+        let postsData;
+        
+        if (isAdmin) {
+          // Admins can see all posts regardless of enrollment
+          postsData = await postService.getPosts(selectedCourse, 'seeking');
+        } else if (selectedCourse) {
+          // Regular users can see filtered posts by course
+          postsData = await postService.getPosts(selectedCourse, 'seeking');
+        } else {
+          // Regular users see posts from enrolled courses by default
+          const response = await postService.getEnrolledPosts('seeking');
+          postsData = response.posts || [];
+          setHasEnrolledCourses(response.has_enrolled_courses);
+        }
+        
+        setPosts(postsData);
       } catch (err) {
-        setError('Failed to load data. Please try again.');
         console.error('Error fetching data:', err);
-        toast.error('Failed to load data');
+        setError('Failed to load data. Please try again.');
       } finally {
         setLoading(false);
       }
     };
 
     fetchData();
-  }, [selectedCourse]);
+  }, [selectedCourse, isAdmin]);
 
   const handleFilterChange = (courseId) => {
     setSelectedCourse(courseId === 'all' ? null : courseId);
@@ -54,14 +69,18 @@ const HelpSeekers = () => {
 
   const handleCreatePost = async (postData) => {
     try {
-      const newPost = await postService.createPost(postData.content, postData.course_id, 'seeking');
+      const newPost = await postService.createPost(
+        postData.content, 
+        postData.courseId, 
+        'seeking'
+      );
+      
       setPosts(prevPosts => [newPost, ...prevPosts]);
       setShowPostForm(false);
-      toast.success('Post created successfully!');
-      return newPost;
+      toast.success('Your post has been created!');
     } catch (error) {
-      toast.error('Failed to create post');
-      throw error;
+      console.error('Error creating post:', error);
+      toast.error('Failed to create post.');
     }
   };
 
@@ -69,25 +88,19 @@ const HelpSeekers = () => {
     setEditingPost(post);
   };
 
-  const handleUpdatePost = async (postData) => {
+  const handleUpdatePost = async (postId, content) => {
     try {
-      const updatedPost = await postService.updatePost(
-        postData.post_id,
-        postData.content
-      );
-      
+      const updatedPost = await postService.updatePost(postId, content);
       setPosts(prevPosts => 
         prevPosts.map(post => 
-          post.post_id === updatedPost.post_id ? updatedPost : post
+          post.post_id === postId ? { ...post, content } : post
         )
       );
-      
       setEditingPost(null);
-      toast.success('Post updated successfully!');
-      return updatedPost;
+      toast.success('Post updated successfully');
     } catch (error) {
+      console.error('Error updating post:', error);
       toast.error('Failed to update post');
-      throw error;
     }
   };
 
@@ -95,10 +108,10 @@ const HelpSeekers = () => {
     try {
       await postService.deletePost(postId);
       setPosts(prevPosts => prevPosts.filter(post => post.post_id !== postId));
-      toast.success('Post deleted successfully!');
+      toast.success('Post deleted successfully');
     } catch (error) {
-      toast.error('Failed to delete post');
       console.error('Error deleting post:', error);
+      toast.error('Failed to delete post');
     }
   };
 
@@ -107,8 +120,8 @@ const HelpSeekers = () => {
       await postService.reportPost(postId, reason);
       toast.success('Post reported successfully');
     } catch (error) {
-      toast.error('Failed to report post');
       console.error('Error reporting post:', error);
+      toast.error('Failed to report post');
     }
   };
 
@@ -125,117 +138,138 @@ const HelpSeekers = () => {
     }
   };
 
-  return (
-    <div className="max-w-5xl mx-auto">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900 mb-2">Help Seekers Board</h1>
-        <p className="text-gray-600">
-          Browse posts from people who are looking for help with their courses.
-        </p>
+  const renderNoEnrolledCoursesMessage = () => (
+    <div className="text-center py-12 bg-white rounded-lg shadow">
+      <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-blue-100">
+        <AcademicCapIcon className="h-6 w-6 text-blue-600" aria-hidden="true" />
       </div>
+      <h3 className="mt-2 text-lg font-medium text-gray-900">No Enrolled Courses</h3>
+      <p className="mt-1 text-sm text-gray-500">
+        You need to enroll in courses to see relevant posts.
+      </p>
+      <div className="mt-6">
+        <Link to="/courses"
+          className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-primary hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
+        >
+          Go to Courses
+        </Link>
+      </div>
+    </div>
+  );
 
-      <div className="bg-white shadow rounded-lg mb-6">
-        <div className="p-4 border-b border-gray-200">
-          <div className="flex items-center justify-between">
-            <div className="w-64">
-              <label htmlFor="course-filter" className="block text-sm font-medium text-gray-700 mb-1">
-                Filter by Course
-              </label>
-              <select
-                id="course-filter"
-                className="block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm rounded-md"
-                onChange={(e) => handleFilterChange(e.target.value)}
-                value={selectedCourse || 'all'}
-              >
-                <option value="all">All Courses</option>
-                {courses.map((course) => (
-                  <option key={course.course_id} value={course.course_id}>
-                    {course.course_name}
-                  </option>
-                ))}
-              </select>
+  return (
+    <div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+      <div className="md:flex">
+        {/* Sidebar */}
+        <div className="md:w-64 flex-shrink-0 mb-6 md:mb-0 md:mr-6">
+          <div className="bg-white shadow rounded-lg overflow-hidden">
+            <div className="p-4 border-b border-gray-200">
+              <h2 className="text-lg font-medium text-gray-900">Courses</h2>
             </div>
-            
-            <button
-              type="button"
-              onClick={() => setShowPostForm(!showPostForm)}
-              className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-primary hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
-            >
-              <PlusIcon className="-ml-1 mr-2 h-5 w-5" aria-hidden="true" />
-              Ask for Help
-            </button>
+            <div className="p-4">
+              <ul className="space-y-2">
+                <li>
+                  <button 
+                    onClick={() => setSelectedCourse(null)}
+                    className={`w-full text-left px-2 py-1 rounded ${
+                      selectedCourse === null ? 'bg-primary text-white' : 'text-gray-700 hover:bg-gray-100'
+                    }`}
+                  >
+                    {isAdmin ? 'All Courses' : 'All Enrolled Courses'}
+                  </button>
+                </li>
+                {courses.map(course => (
+                  <li key={course.course_id}>
+                    <button 
+                      onClick={() => setSelectedCourse(course.course_id)}
+                      className={`w-full text-left px-2 py-1 rounded ${
+                        selectedCourse === course.course_id ? 'bg-primary text-white' : 'text-gray-700 hover:bg-gray-100'
+                      }`}
+                    >
+                      {course.course_name}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </div>
           </div>
         </div>
         
-        {showPostForm && (
-          <div className="p-4 border-b border-gray-200">
-            <h2 className="text-lg font-medium text-gray-900 mb-4">Ask for Help</h2>
-            <PostForm
-              initialData={{ post_type: 'seeking' }}
-              onSubmit={handleCreatePost}
-              onCancel={() => setShowPostForm(false)}
-              courses={courses}
-            />
-          </div>
-        )}
-      </div>
-
-      {loading ? (
-        <div className="text-center py-12">
-          <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-primary border-r-transparent align-[-0.125em] motion-reduce:animate-[spin_1.5s_linear_infinite]" role="status">
-            <span className="!absolute !-m-px !h-px !w-px !overflow-hidden !whitespace-nowrap !border-0 !p-0 ![clip:rect(0,0,0,0)]">Loading...</span>
-          </div>
-          <p className="mt-2 text-sm text-gray-500">Loading posts...</p>
-        </div>
-      ) : error ? (
-        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded relative" role="alert">
-          <strong className="font-bold">Error!</strong>
-          <span className="block sm:inline"> {error}</span>
-        </div>
-      ) : posts.length === 0 ? (
-        <div className="text-center py-12 bg-white rounded-lg shadow">
-          <h3 className="mt-2 text-lg font-medium text-gray-900">No help requests yet</h3>
-          <p className="mt-1 text-sm text-gray-500">
-            Be the first to ask for help with your courses!
-          </p>
-          <div className="mt-6">
-            <button
-              onClick={() => setShowPostForm(true)}
-              className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-primary hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
-            >
-              <PlusIcon className="-ml-1 mr-2 h-5 w-5" />
-              Ask for Help
-            </button>
-          </div>
-        </div>
-      ) : (
-        <div className="space-y-4">
-          {editingPost && (
-            <div className="bg-white shadow rounded-lg overflow-hidden mb-4">
-              <div className="p-4">
-                <h2 className="text-lg font-medium text-gray-900 mb-4">Edit Post</h2>
-                <PostForm
-                  initialData={editingPost}
-                  onSubmit={handleUpdatePost}
-                  onCancel={() => setEditingPost(null)}
-                  courses={courses}
-                />
-              </div>
+        {/* Main content */}
+        <div className="flex-1">
+          <div className="bg-white shadow rounded-lg overflow-hidden">
+            <div className="p-4 border-b border-gray-200 flex justify-between items-center">
+              <h1 className="text-2xl font-bold text-gray-900">Help Seekers</h1>
+              <button
+                onClick={() => {
+                  setShowPostForm(true);
+                  setEditingPost(null);
+                }}
+                className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
+              >
+                Ask for Help
+              </button>
             </div>
-          )}
-          
-          {posts.map(post => (
-            <PostCard
-              key={post.post_id}
-              post={post}
-              onEdit={() => handleEditPost(post)}
-              onDelete={() => handleDeletePost(post.post_id)}
-              onReport={(reason) => handleReportPost(post.post_id, reason)}
-              onJoinGroup={() => handleJoinGroup(post.post_id)}
-            />
-          ))}
+            
+            <div className="p-4">
+              {showPostForm && (
+                <div className="mb-6">
+                  <PostForm 
+                    courses={courses}
+                    postType="seeking"
+                    onSubmit={handleCreatePost}
+                    onCancel={() => setShowPostForm(false)}
+                  />
+                </div>
+              )}
+              
+              {editingPost && (
+                <div className="mb-6">
+                  <h3 className="text-lg font-medium text-gray-900 mb-3">Edit Your Post</h3>
+                  <PostForm 
+                    isEditing
+                    initialPost={editingPost}
+                    courses={courses}
+                    postType="seeking"
+                    onSubmit={(data) => handleUpdatePost(editingPost.post_id, data.content)}
+                    onCancel={() => setEditingPost(null)}
+                  />
+                </div>
+              )}
+              
+              {loading ? (
+                <div className="py-10 text-center">
+                  <div className="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary"></div>
+                  <p className="mt-2 text-gray-500">Loading posts...</p>
+                </div>
+              ) : error ? (
+                <div className="py-10 text-center text-red-500">
+                  <p>{error}</p>
+                </div>
+              ) : !hasEnrolledCourses && !isAdmin && !selectedCourse ? (
+                renderNoEnrolledCoursesMessage()
+              ) : posts.length === 0 ? (
+                <div className="py-10 text-center">
+                  <p className="text-gray-500">No help-seeker posts found.</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {posts.map(post => (
+                    <PostCard 
+                      key={post.post_id}
+                      post={post}
+                      onEdit={() => handleEditPost(post)}
+                      onDelete={() => handleDeletePost(post.post_id)}
+                      onReport={(reason) => handleReportPost(post.post_id, reason)}
+                      onJoinGroup={() => handleJoinGroup(post.post_id)}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
         </div>
-      )}
+      </div>
     </div>
   );
 };

@@ -12,6 +12,7 @@ import CourseList from './pages/CourseList';
 import HelpSeekers from './pages/HelpSeekers';
 import Helpers from './pages/Helpers';
 import StudyGroups from './pages/StudyGroups';
+import ReportedPosts from './pages/ReportedPosts';
 
 function App() {
   return (
@@ -39,7 +40,7 @@ function App() {
               
               {/* Admin routes */}
               <Route element={<ProtectedRoute requireAdmin={true} />}>
-                {/* Add admin routes as needed */}
+                <Route path="/reported-posts" element={<ReportedPosts />} />
               </Route>
             </Routes>
           </main>

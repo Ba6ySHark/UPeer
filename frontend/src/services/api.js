@@ -46,6 +46,21 @@ export const postService = {
     return response.data;
   },
   
+  // Get posts for courses the user is enrolled in
+  getEnrolledPosts: async (postType = null) => {
+    let url = '/api/posts/enrolled/';
+    const params = new URLSearchParams();
+    
+    if (postType) params.append('post_type', postType);
+    
+    if (params.toString()) {
+      url += '?' + params.toString();
+    }
+    
+    const response = await axiosInstance.get(url);
+    return response.data;
+  },
+  
   // Create a new post
   createPost: async (content, courseId = null, postType = 'seeking') => {
     const data = { 
