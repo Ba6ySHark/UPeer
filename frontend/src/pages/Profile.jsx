@@ -42,7 +42,8 @@ const Profile = () => {
     setMessage({ text: '', type: '' });
 
     try {
-      const result = await updateProfile(name, email);
+      // Only update name since email is not editable
+      const result = await updateProfile(name, user.email);
       
       if (result.success) {
         setMessage({ text: 'Profile updated successfully!', type: 'success' });
@@ -128,11 +129,12 @@ const Profile = () => {
                       name="email"
                       id="email"
                       autoComplete="email"
-                      required
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      className="form-input"
+                      className="form-input bg-gray-100 cursor-not-allowed"
+                      disabled
                     />
+                    <p className="mt-1 text-xs text-gray-500">Email address cannot be changed.</p>
                   </div>
                 </div>
               </div>
