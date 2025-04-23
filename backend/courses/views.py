@@ -23,7 +23,10 @@ class CourseListView(APIView):
             
         serializer = CourseCreateSerializer(data=request.data)
         if serializer.is_valid():
-            course_id = CourseManager.create_course(serializer.validated_data['course_name'])
+            course_id = CourseManager.create_course(
+                serializer.validated_data['course_name'],
+                serializer.validated_data.get('description', None)
+            )
             course = CourseManager.get_course_by_id(course_id)
             return Response(CourseSerializer(course).data, status=status.HTTP_201_CREATED)
         

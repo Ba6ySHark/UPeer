@@ -28,8 +28,11 @@ export const courseService = {
   },
   
   // Create a new course (admin only)
-  createCourse: async (courseName) => {
-    const response = await axiosInstance.post(`/api/courses/`, { course_name: courseName });
+  createCourse: async (courseName, description = '') => {
+    const response = await axiosInstance.post(`/api/courses/`, { 
+      course_name: courseName,
+      description: description 
+    });
     return response.data;
   }
 };
