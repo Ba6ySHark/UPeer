@@ -132,7 +132,7 @@ const PostCard = ({ post, onEdit, onDelete, onReport, onJoinGroup }) => {
               {commentCount} {commentCount === 1 ? 'comment' : 'comments'}
             </button>
             
-            {onJoinGroup && (
+            {onJoinGroup && !user?.isAdmin && (
               <button 
                 className="inline-flex items-center px-3 py-1 border border-transparent rounded-md text-xs font-medium bg-indigo-100 text-indigo-700 hover:bg-indigo-200 transition-colors"
                 onClick={() => onJoinGroup(postId)}
