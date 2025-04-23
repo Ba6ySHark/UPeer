@@ -29,22 +29,16 @@ The easiest way to run the application is using Docker Compose, which will set u
 
 ### Steps to Run
 
-1. Clone the repository:
-   ```bash
-   git clone <repository-url>
-   cd UPeer
-   ```
-
-2. Start the application:
+1. Start the application:
    ```bash
    docker-compose up
    ```
 
-3. Access the application:
+2. Access the application:
    - Frontend: http://localhost:3001
    - Backend API: http://localhost:8001
 
-4. Stop the application:
+3. Stop the application:
    ```bash
    docker-compose down
    ```
@@ -82,7 +76,3 @@ The application comes with sample user accounts that you can use to test the fea
   - macOS/Linux: `source venv/bin/activate`
 - Install dependencies: `pip install -r requirements.txt`
 - Start development server: `python manage.py runserver`
-
-## License
-
-This project is licensed under the MIT License.
