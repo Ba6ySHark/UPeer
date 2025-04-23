@@ -3,11 +3,12 @@ from rest_framework.exceptions import AuthenticationFailed
 import jwt
 from django.conf import settings
 from .models import UserManager
-from channels.middleware import BaseMiddleware
-from channels.db import database_sync_to_async
 from django.http import JsonResponse
 from django.utils.deprecation import MiddlewareMixin
+import logging
 
+# Get logger for this module
+logger = logging.getLogger('django')
 
 # Custom User class that wraps dict data
 class CustomUser:
@@ -40,7 +41,17 @@ class JWTAuthentication(BaseAuthentication):
         
         try:
             # Decode the JWT token
+            # First try without validation for detailed debugging
+            try:
+                decoded_payload = jwt.decode(token, options={"verify_signature": False})
+                logger.debug(f"Token payload (unverified): {decoded_payload}")
+            except Exception as e:
+                logger.error(f"Token is completely malformed: {str(e)}")
+            
+            # Now properly decode with validation
             payload = jwt.decode(token, settings.SECRET_KEY, algorithms=['HS256'])
+            logger.debug(f"Token decoded successfully: {payload}")
+            
             user_id = payload.get('user_id')
             if not user_id:
                 raise AuthenticationFailed('Invalid token payload')
@@ -61,32 +72,6 @@ class JWTAuthentication(BaseAuthentication):
     def authenticate_header(self, request):
         return 'Bearer'
 
-class JWTAuthMiddleware(BaseMiddleware):
-    async def __call__(self, scope, receive, send):
-        # Get the token from the query string
-        query_string = scope.get('query_string', b'').decode()
-        token = None
-        for param in query_string.split('&'):
-            if param.startswith('token='):
-                token = param.split('=')[1]
-                break
-        
-        if token:
-            try:
-                # Decode the JWT token
-                payload = jwt.decode(token, settings.SECRET_KEY, algorithms=['HS256'])
-                user_id = payload.get('user_id')
-                if user_id:
-                    # Get the user from database
-                    user_dict = await database_sync_to_async(UserManager.get_user_by_id)(user_id)
-                    if user_dict:
-                        # Convert dict to CustomUser object
-                        scope['user'] = CustomUser(user_dict)
-            except (jwt.ExpiredSignatureError, jwt.InvalidTokenError):
-                pass
-        
-        return await super().__call__(scope, receive, send)
-
 class JWTMiddleware(MiddlewareMixin):
     """
     Django middleware that processes JWT authentication for regular Django views
@@ -104,6 +89,7 @@ class JWTMiddleware(MiddlewareMixin):
         
         # Check if request path starts with any exempt path
         if any(request.path.startswith(path) for path in exempt_paths):
+            logger.debug(f"Path exempt from HTTP authentication: {request.path}")
             return None
             
         # Skip OPTIONS requests (for CORS preflight)
@@ -125,7 +111,17 @@ class JWTMiddleware(MiddlewareMixin):
             
         try:
             # Decode the JWT token
+            # First try without validation for detailed debugging
+            try:
+                decoded_payload = jwt.decode(token, options={"verify_signature": False})
+                logger.debug(f"Token payload (unverified): {decoded_payload}")
+            except Exception as e:
+                logger.error(f"Token is completely malformed: {str(e)}")
+            
+            # Now properly decode with validation
             payload = jwt.decode(token, settings.SECRET_KEY, algorithms=['HS256'])
+            logger.debug(f"Token decoded successfully: {payload}")
+            
             user_id = payload.get('user_id')
             if not user_id:
                 return JsonResponse({'error': 'Invalid token payload'}, status=401)

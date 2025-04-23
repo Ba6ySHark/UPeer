@@ -4,8 +4,13 @@ import { useLocation } from 'react-router-dom';
 import { groupService, chatService } from '../services/api';
 import { AuthContext } from '../context/AuthContext';
 import { format } from 'date-fns';
-import { PaperAirplaneIcon, UserGroupIcon, XMarkIcon, PlusIcon, UserIcon } from '@heroicons/react/24/outline';
-import webSocketService from '../services/websocket';
+import { 
+  PaperAirplaneIcon, 
+  UserGroupIcon, 
+  XMarkIcon, 
+  PlusIcon, 
+  UserIcon
+} from '@heroicons/react/24/outline';
 
 const StudyGroups = () => {
   const [groups, setGroups] = useState([]);
@@ -22,7 +27,7 @@ const StudyGroups = () => {
   const { user } = useContext(AuthContext);
   const messagesEndRef = useRef(null);
   const location = useLocation();
-
+  
   // Check for any newly joined group from query params
   useEffect(() => {
     const queryParams = new URLSearchParams(location.search);
@@ -70,40 +75,29 @@ const StudyGroups = () => {
     }
   }, [selectedGroup]);
 
+  // Set up polling for new messages
+  useEffect(() => {
+    let intervalId;
+    
+    if (selectedGroup) {
+      // Poll for new messages every 5 seconds
+      intervalId = setInterval(() => {
+        fetchGroupDetails();
+      }, 5000);
+    }
+    
+    // Clean up interval on unmount or when group changes
+    return () => {
+      if (intervalId) {
+        clearInterval(intervalId);
+      }
+    };
+  }, [selectedGroup]);
+
   // Scroll to bottom when messages change
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
-
-  // Connect to WebSocket when a group is selected
-  useEffect(() => {
-    if (selectedGroup && user) {
-      // Connect to WebSocket for this group
-      const token = localStorage.getItem('token');
-      webSocketService.connect(selectedGroup.group_id, token);
-      
-      // Register message handler
-      const unsubscribe = webSocketService.onMessage((data) => {
-        // Only add the message if it's not from the current user
-        // (to avoid duplicates since we add messages optimistically)
-        if (data.user_id !== user.id) {
-          const newMessage = {
-            message_id: data.message_id,
-            content: data.content,
-            timestamp: data.timestamp,
-            sender: data.sender,
-          };
-          setMessages(prev => [...prev, newMessage]);
-        }
-      });
-      
-      // Cleanup on unmount or when changing groups
-      return () => {
-        unsubscribe();
-        webSocketService.disconnect();
-      };
-    }
-  }, [selectedGroup, user]);
 
   const fetchGroupDetails = async () => {
     setMessagesLoading(true);
@@ -148,15 +142,11 @@ const StudyGroups = () => {
       const messageContent = newMessage;
       setNewMessage('');
       
-      // Try to send via WebSocket first if connected
-      if (webSocketService.socket?.readyState === WebSocket.OPEN) {
-        webSocketService.sendMessage(messageContent);
-      } else {
-        // Fallback to API if WebSocket is not connected
-        await chatService.sendMessage(selectedGroup.group_id, messageContent);
-        // Refresh to get the latest messages
-        await fetchGroupDetails();
-      }
+      // Send via API
+      await chatService.sendMessage(selectedGroup.group_id, messageContent);
+      
+      // Refresh to get the latest messages with proper IDs
+      await fetchGroupDetails();
     } catch (err) {
       const errorMessage = err.response?.data?.error || 'Failed to send message';
       toast.error(errorMessage);

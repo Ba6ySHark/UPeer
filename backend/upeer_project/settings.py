@@ -49,7 +49,6 @@ INSTALLED_APPS = [
     # Third party apps
     'rest_framework',
     'corsheaders',
-    'channels',
     
     # Project apps
     'api',
@@ -90,7 +89,6 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'upeer_project.wsgi.application'
-ASGI_APPLICATION = 'upeer_project.asgi.application'
 
 
 # Database
@@ -98,16 +96,14 @@ ASGI_APPLICATION = 'upeer_project.asgi.application'
 
 DATABASES = {
     "default": {
-        "ENGINE": "django.db.backends.mysql",
-        "NAME": "myproject",
-        "USER": "myproj_user",
-        "PASSWORD": "s0m3‑str0ng‑p4ss",
-        "HOST": "127.0.0.1",   # or "localhost"
-        "PORT": "3306",
+        "ENGINE": env.str('DB_ENGINE', default='django.db.backends.mysql'),
+        "NAME": env.str('DB_NAME', default='myproject'),
+        "USER": env.str('DB_USER', default='myproj_user'),
+        "PASSWORD": env.str('DB_PASSWORD', default='s0m3‑str0ng‑p4ss'),
+        "HOST": env.str('DB_HOST', default='127.0.0.1'),
+        "PORT": env.str('DB_PORT', default='3306'),
         "OPTIONS": {
-            "charset": "utf8mb4",
-            # for PyMySQL uncomment the next line
-            # "init_command": "SET sql_mode='STRICT_TRANS_TABLES'",
+            "charset": env.str('DB_OPTIONS_CHARSET', default='utf8mb4'),
         },
     }
 }
@@ -177,9 +173,33 @@ REST_FRAMEWORK = {
     ],
 }
 
-# Channels settings
-CHANNEL_LAYERS = {
-    'default': {
-        'BACKEND': 'channels.layers.InMemoryChannelLayer',  # For development
+# Channels logging
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'verbose': {
+            'format': '{levelname} {asctime} {module} {message}',
+            'style': '{',
+        },
+    },
+    'handlers': {
+        'console': {
+            'level': 'DEBUG',
+            'class': 'logging.StreamHandler',
+            'formatter': 'verbose',
+        },
+    },
+    'loggers': {
+        'django': {
+            'handlers': ['console'],
+            'level': 'INFO',
+            'propagate': True,
+        },
+        'django.request': {
+            'handlers': ['console'],
+            'level': 'DEBUG',
+            'propagate': False,
+        },
     },
 }

@@ -1,6 +1,10 @@
 from django.db import models
 from django.db import connection
 import hashlib
+import logging
+
+# Get logger for this module
+logger = logging.getLogger('channels')
 
 # Create your models here.
 
@@ -33,18 +37,29 @@ class UserManager:
     
     @staticmethod
     def get_user_by_id(user_id):
-        with connection.cursor() as cursor:
-            query = "SELECT user_id, name, email, is_admin, created_at FROM users WHERE user_id = %s"
-            cursor.execute(query, [user_id])
-            row = cursor.fetchone()
-            if row:
-                return {
-                    'user_id': row[0],
-                    'name': row[1],
-                    'email': row[2],
-                    'is_admin': bool(row[3]),
-                    'created_at': row[4]
-                }
+        try:
+            with connection.cursor() as cursor:
+                query = """
+                    SELECT user_id, name, email, password, is_admin, created_at 
+                    FROM users 
+                    WHERE user_id = %s
+                """
+                cursor.execute(query, [user_id])
+                user = cursor.fetchone()
+                
+                if user:
+                    return {
+                        'user_id': user[0],
+                        'name': user[1],
+                        'email': user[2],
+                        'password': user[3],
+                        'is_admin': bool(user[4]),
+                        'created_at': user[5]
+                    }
+                logger.warning(f"No user found with ID: {user_id}")
+                return None
+        except Exception as e:
+            logger.exception(f"Error retrieving user {user_id}: {str(e)}")
             return None
     
     @staticmethod
