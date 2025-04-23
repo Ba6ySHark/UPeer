@@ -25,21 +25,23 @@ const Helpers = () => {
       try {
         setLoading(true);
         
-        // Fetch all courses and user's enrolled courses
-        const allCourses = await courseService.getAllCourses();
-        setCourses(allCourses);
-        
-        // Only check enrolled courses for non-admin users
-        if (!isAdmin) {
+        // Fetch courses based on user role
+        if (isAdmin) {
+          // Admins see all courses
+          const allCourses = await courseService.getAllCourses();
+          setCourses(allCourses);
+        } else {
+          // Regular users only see enrolled courses
           const userCourses = await courseService.getUserCourses();
+          setCourses(userCourses);
           setHasEnrolledCourses(userCourses.length > 0);
         }
         
-        // Fetch posts based on selected course or get all enrolled posts for admins
+        // Fetch posts based on selected course or user enrollment
         let postsData;
         
         if (isAdmin) {
-          // Admins can see all posts regardless of enrollment
+          // Admins can see all posts
           postsData = await postService.getPosts(selectedCourse, 'offering');
         } else if (selectedCourse) {
           // Regular users can see filtered posts by course

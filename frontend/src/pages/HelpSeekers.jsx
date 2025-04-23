@@ -25,13 +25,15 @@ const HelpSeekers = () => {
       try {
         setLoading(true);
         
-        // Fetch all courses and user's enrolled courses
-        const allCourses = await courseService.getAllCourses();
-        setCourses(allCourses);
-        
-        // Only check enrolled courses for non-admin users
-        if (!isAdmin) {
+        // Fetch courses based on user role
+        if (isAdmin) {
+          // Admins see all courses
+          const allCourses = await courseService.getAllCourses();
+          setCourses(allCourses);
+        } else {
+          // Regular users only see enrolled courses
           const userCourses = await courseService.getUserCourses();
+          setCourses(userCourses);
           setHasEnrolledCourses(userCourses.length > 0);
         }
         

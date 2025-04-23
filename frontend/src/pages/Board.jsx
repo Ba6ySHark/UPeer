@@ -16,7 +16,6 @@ const Board = () => {
   const [error, setError] = useState('');
   const [showPostForm, setShowPostForm] = useState(false);
   const [editingPost, setEditingPost] = useState(null);
-  const [enrolledCourses, setEnrolledCourses] = useState([]);
   const [viewMode, setViewMode] = useState('all'); // 'all' or 'enrolled'
   const [hasEnrolledCourses, setHasEnrolledCourses] = useState(true);
 
@@ -26,14 +25,16 @@ const Board = () => {
       try {
         setLoading(true);
         
-        // Always get all courses for the sidebar
-        const allCourses = await courseService.getAllCourses();
-        setCourses(allCourses);
-        
-        // Only check enrolled courses for non-admin users
-        if (!isAdmin) {
+        // Only fetch enrolled courses for regular users, all courses for admins
+        let coursesToShow = [];
+        if (isAdmin) {
+          const allCourses = await courseService.getAllCourses();
+          coursesToShow = allCourses;
+          setCourses(allCourses);
+        } else {
           const userCourses = await courseService.getUserCourses();
-          setEnrolledCourses(userCourses);
+          coursesToShow = userCourses;
+          setCourses(userCourses);
           setHasEnrolledCourses(userCourses.length > 0);
         }
         
@@ -93,6 +94,21 @@ const Board = () => {
     }
   };
 
+  // Handle creating a new post
+  const handleCreatePost = async (postData) => {
+    try {
+      const newPost = await postService.createPost(
+        postData.content,
+        postData.course_id,
+        postData.post_type
+      );
+      setPosts(prevPosts => [newPost, ...prevPosts]);
+      setShowPostForm(false);
+    } catch (error) {
+      console.error('Error creating post:', error);
+    }
+  };
+
   // Handle post deletion
   const handleDeletePost = (postId) => {
     setPosts(posts.filter(post => post.post_id !== postId));
@@ -107,25 +123,6 @@ const Board = () => {
   const handleEditPost = (post) => {
     setEditingPost(post);
     setShowPostForm(false); // Close new post form if open
-  };
-
-  // Handle enrollment in a course
-  const handleEnroll = async (courseId) => {
-    try {
-      await courseService.enrollCourse(courseId);
-      // Refresh enrolled courses
-      const userCourses = await courseService.getUserCourses();
-      setEnrolledCourses(userCourses);
-      setHasEnrolledCourses(userCourses.length > 0);
-    } catch (error) {
-      console.error('Error enrolling in course:', error);
-    }
-  };
-
-  // Check if user is enrolled in a course
-  const isEnrolled = (courseId) => {
-    if (isAdmin) return true; // Admins can see all courses regardless of enrollment
-    return enrolledCourses.some(course => course.course_id === courseId);
   };
 
   // No enrolled courses message
@@ -156,7 +153,7 @@ const Board = () => {
           <div className="md:w-64 flex-shrink-0 mb-6 md:mb-0">
             <div className="bg-white shadow rounded-lg overflow-hidden">
               <div className="p-4 border-b border-gray-200">
-                <h2 className="text-lg font-medium text-gray-900">Courses</h2>
+                <h2 className="text-lg font-medium text-gray-900">Your Courses</h2>
               </div>
               
               {/* View mode toggle - only for non-admin users */}
@@ -190,9 +187,19 @@ const Board = () => {
               )}
               
               <div className="p-4">
-                <ul className="space-y-2">
-                  {/* Always show "All Posts" for admins */}
-                  {(viewMode === 'all' || isAdmin) && (
+                {!hasEnrolledCourses && !isAdmin ? (
+                  <div className="text-center py-4">
+                    <p className="text-sm text-gray-500 mb-3">You haven't enrolled in any courses yet.</p>
+                    <Link 
+                      to="/courses"
+                      className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md text-white bg-primary hover:bg-primary-dark"
+                    >
+                      Browse Courses
+                    </Link>
+                  </div>
+                ) : (
+                  <ul className="space-y-2">
+                    {/* Always show "All Posts" option */}
                     <li>
                       <button 
                         onClick={() => handleFilterChange(null)}
@@ -203,34 +210,22 @@ const Board = () => {
                         All Posts
                       </button>
                     </li>
-                  )}
-                  
-                  {courses.map(course => (
-                    <li key={course.course_id}>
-                      {/* Show all courses for admins or filter by enrollment for regular users */}
-                      {(isAdmin || viewMode === 'all' || (viewMode === 'enrolled' && isEnrolled(course.course_id))) && (
-                        <div className="flex justify-between items-center">
-                          <button 
-                            onClick={() => handleFilterChange(course.course_id)}
-                            className={`text-left px-2 py-1 rounded ${
-                              selectedCourse === course.course_id ? 'bg-primary text-white' : 'text-gray-700 hover:bg-gray-100'
-                            }`}
-                          >
-                            {course.course_name}
-                          </button>
-                          {!isAdmin && !isEnrolled(course.course_id) && viewMode === 'all' && (
-                            <button
-                              onClick={() => handleEnroll(course.course_id)}
-                              className="ml-2 text-xs text-primary hover:text-primary-dark"
-                            >
-                              Enroll
-                            </button>
-                          )}
-                        </div>
-                      )}
-                    </li>
-                  ))}
-                </ul>
+                    
+                    {/* Show enrolled courses */}
+                    {courses.map(course => (
+                      <li key={course.course_id}>
+                        <button 
+                          onClick={() => handleFilterChange(course.course_id)}
+                          className={`w-full text-left px-2 py-1 rounded ${
+                            selectedCourse === course.course_id ? 'bg-primary text-white' : 'text-gray-700 hover:bg-gray-100'
+                          }`}
+                        >
+                          {course.course_name}
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
               </div>
             </div>
           </div>
@@ -252,10 +247,9 @@ const Board = () => {
             {(showPostForm || editingPost) && (
               <div className="mb-6">
                 <PostForm 
-                  isEditing={!!editingPost}
-                  initialPost={editingPost}
+                  initialData={editingPost || {}}
                   courses={courses}
-                  onSuccess={handlePostSuccess}
+                  onSubmit={handlePostSuccess}
                   onCancel={() => {
                     setShowPostForm(false);
                     setEditingPost(null);
